@@ -21,6 +21,7 @@ func NewTCPServer() TCPNode {
 }
 
 func (n *TCPNode) StartListening(port int) error {
+
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
 		return err
@@ -59,21 +60,25 @@ func (n *TCPNode) ConnectToPeer(address string) error {
 }
 
 func (n *TCPNode) SendMsg(peer string, msg []byte) error {
-	conn, found := n.peer[peer]
-	if !found {
-		return fmt.Errorf("peer not found %s", peer)
-	}
-	_, err := conn.Write(ConvertToBinary(0x01, msg))
-	return err
+	/*
+		conn, found := n.peer[peer]
+		if !found {
+			return fmt.Errorf("peer not found %s", peer)
+		}
+		_, err := conn.Write(ConvertToBinary(0x01, msg))
+		return err*/
+	return nil
 }
 
 func (n *TCPNode) ReceiveMsg() ([]byte, error) {
-	msg := <-n.receive
-	convertedMsg, err := ConvertFromBinary(msg)
-	if err != nil {
-		return nil, err
-	}
-	return convertedMsg.Payload, nil
+
+	/*	msg := <-n.receive
+		convertedMsg, err := ConvertFromBinary(msg)
+		if err != nil {
+			return nil, err
+		}
+		return convertedMsg.Payload, nil*/
+	return nil, nil
 }
 
 func (n *TCPNode) Close() {
