@@ -72,13 +72,10 @@ func (n *TCPNode) SendMsg(peer string, msg []byte) error {
 
 func (n *TCPNode) ReceiveMsg() ([]byte, error) {
 
-	/*	msg := <-n.receive
-		convertedMsg, err := ConvertFromBinary(msg)
-		if err != nil {
-			return nil, err
-		}
-		return convertedMsg.Payload, nil*/
-	return nil, nil
+	msg := <-n.receive
+
+	return msg, nil
+
 }
 
 func (n *TCPNode) Close() {

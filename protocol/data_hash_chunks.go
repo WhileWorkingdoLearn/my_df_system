@@ -25,9 +25,9 @@ func hashChunkMiddleware(chunks *[]FileChunk, process func(FileChunk)) func(File
 }
 
 // **Konvertiert FileChunk in BinaryMsg & sendet es**
-func sendChunkMessage(send func(NodeMsg)) func(FileChunk) {
+func sendChunkMessage(send func(ByteNodeMsg)) func(FileChunk) {
 	return func(chunk FileChunk) {
-		var msg NodeMsg
+		var msg ByteNodeMsg
 		msg.Version[0] = 1
 		msg.MsgType[0] = 1 // Chunk-Transfer
 		binary.LittleEndian.PutUint32(msg.ChunkSize[:], uint32(len(chunk.Data)))
@@ -41,7 +41,7 @@ func sendChunkMessage(send func(NodeMsg)) func(FileChunk) {
 }
 
 // **Encodiert BinaryMsg in ein Binärformat**
-func encodeBinaryMsg(msg NodeMsg) ([]byte, error) {
+func encodeBinaryMsg(msg ByteNodeMsg) ([]byte, error) {
 	totalSize := 10
 	/*MsgByteSizes.Version +
 	MsgByteSizes.MsgType +

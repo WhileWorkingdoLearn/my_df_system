@@ -5,5 +5,6 @@ type TransferHandler struct {
 }
 
 func (th TransferHandler) Transfer(rw ResponseWriter, req *Request) {
+	
 	th.Handle(rw, req)
 }

@@ -13,7 +13,7 @@ type ResponseWriter interface {
 }
 
 type writer struct {
-	msg NodeMsg
+	msg ByteNodeMsg
 }
 
 func (rw *writer) Version(v int) {

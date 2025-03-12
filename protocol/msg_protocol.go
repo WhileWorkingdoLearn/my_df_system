@@ -1,38 +1,5 @@
 package transfer
 
-type NodeMsg struct {
-	Version     [1]byte
-	MsgType     [1]byte
-	Timestamp   [8]byte
-	Timeout     [4]byte
-	Auth        [16]byte
-	PayloadType [1]byte
-	ChunkSize   [4]byte
-	ChunkIndex  [4]byte
-	ChunkData   []byte
-	ChunkHash   []byte
-}
-
-const (
-	MsgTypePing  byte = 0x01
-	MsgTypePong  byte = 0x02
-	MsgTypeData  byte = 0x03
-	MsgTypeAck   byte = 0x04
-	MsgTypeError byte = 0x05
-)
-
-const (
-	OffsetVersion     = iota                  // 0
-	OffsetMsgType                             // 1
-	OffsetTimestamp                           // 2  (Start)
-	OffsetTimeout     = OffsetTimestamp + 8   // 10
-	OffsetAuth        = OffsetTimeout + 4     // 14
-	OffsetPayloadType = OffsetAuth + 16       // 30
-	OffsetChunkSize   = OffsetPayloadType + 1 // 31
-	OffsetChunkIndex  = OffsetChunkSize + 4   // 35
-	OffsetChunkData   = OffsetChunkIndex + 4  // 75
-)
-
 /*
 Protocol structure
   - Version     [1]byte  Protocol-Version (0-255)
@@ -51,6 +18,42 @@ Protocol structure
     }
 */
 
+type ByteNodeMsgHeader struct {
+	Version     [1]byte
+	MsgType     [1]byte
+	Method      [1]byte
+	Timestamp   [8]byte
+	Timeout     [4]byte
+	Domain      [32]byte
+	Endpoint    [32]byte
+	Auth        [16]byte
+	PayloadType [1]byte
+}
+
+type ByteNodeMsg struct {
+	ByteNodeMsgHeader
+	ChunkSize  [4]byte
+	ChunkIndex [4]byte
+	ChunkData  []byte
+	ChunkHash  []byte
+}
+
+const (
+	OffsetByteVersion   = iota                     // 0
+	OffsetByteMsgType                              // 1
+	OffsetByteMethod                               // 2
+	OffsetByteTimestamp = OffsetByteMethod + 1     // 8
+	OffsetByteTimeout   = OffsetByteTimestamp + 4  // 12
+	OffsetByteDomain    = OffsetByteTimeout + 4    // 16
+	OffsetByteEndpoint  = OffsetByteTimestamp + 32 // 48
+	OffsetByteAuth      = OffsetByteTimeout + 32   // 80
+	OffsetByteDataType  = OffsetByteAuth + 16      // 96
+	MsgHeaderEnd        = OffsetByteDataType + 1   //97
+
+	OffsetByteChunkSize  = MsgHeaderEnd + 1 //
+	OffsetByteChunkIndex = OffsetByteChunkSize + 4
+)
+
 /*
 Value	Typ	Examples
 0	Unbekannt	-
@@ -64,12 +67,12 @@ Value	Typ	Examples
 */
 
 const (
-	Unkown = iota
-	JSON
-	TEXT_utf8
-	Binary
-	Picture
-	Video
-	Audio
-	Custom
+	data_unkown = iota
+	data_json
+	data_text_utf8
+	data_binary
+	data_picture
+	data_video
+	data_audio
+	data_custom
 )
