@@ -1,19 +1,42 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
+	"time"
 
 	transfer "github.com/WhileCodingDoLearn/my_df_system/protocol"
 )
 
 func main() {
-	data, err := transfer.EncodeNodeMsgHeader(1, 2, "timestamp", "Lifespan", "domain", "endpoint", "auth")
-	if err != nil {
-		log.Fatal("")
+
+	msgHheader := transfer.MsgHeader{
+		Version:     1,
+		MsgType:     2,
+		Method:      3,
+		Timestamp:   int(time.Now().Unix()),
+		Timeout:     time.Duration(3) * time.Second,
+		Domain:      "blabal",
+		Endpoint:    "v1/dv",
+		Auth:        "mykey",
+		PayloadType: 1,
+		PayloadSize: 10,
 	}
+
+	data, err := transfer.EncodeMsg(msgHheader)
+	if err != nil {
+		log.Fatal()
+	}
+
 	fmt.Println(data)
-	fmt.Println(len(data) * cap(data))
+
+	msg, err := transfer.DecodeMsgStream(bytes.NewBuffer(data))
+	if err != nil {
+		log.Fatal()
+	}
+
+	fmt.Println(msg)
 }
 
 /*

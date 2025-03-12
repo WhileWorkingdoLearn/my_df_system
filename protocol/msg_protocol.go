@@ -1,24 +1,23 @@
 package transfer
 
+import "time"
+
 /*
 Protocol structure
-  - Version     [1]byte  Protocol-Version (0-255)
-  - MsgType     [1]byte  // Messagetype (Request, Response, Data-Chunk...)
-  - Timestamp   [8]byte  // Unix-Timestamp (uint64, Nanoseconds-Precision)
-  - Timeout     [4]byte  // relative timeout (uint32, 4 Bytes, milliseconds since receiving)
-  - Auth        [16]byte // Authentification-Token or Signature (HMAC, JWT-Hash, etc.)
-  - PayloadType [1]byte  // Typ e ofPayload (1 = JSON, 2 = Text, 3 = Binary, etc.)
-  - ChunkSize   [4]byte  // Byte size of Data Chunk
-  - NumChunks   [4]byte  //  Number of Chunks of File
-    RootHash    [32]byte // Root Hash of Merkle Root for Data validation
-    ChunkIndex  [4]byte  // Index of aktual Chunks
-    ChunkData   []byte   // Data / Payload
-    ChunkHash   [32]byte // CheckSum of Chunks
-    Checksum    [4]byte  //  Checksum of Total message
+  	- Version     	[1]byte  	Protocol-Version (0-255)
+  	- MsgType     	[1]byte  	Messagetype (Request, Response, Data-Chunk...)
+	- Method   		[1]byte
+  	- Timestamp   	[8]byte	Unix-Timestamp (uint64, Nanoseconds-Precision)
+  	- Timeout     	[4]byte   relative timeout (uint32, 4 Bytes, milliseconds since receiving)
+	- Domain      	[32]byte
+	- Endpoint   	[32]byte
+  	- Auth        	[16]byte // Authentification-Token or Signature (HMAC, JWT-Hash, etc.)
+  	- PayloadType 	[1]byte  // Typ e ofPayload (1 = JSON, 2 = Text, 3 = Binary, etc.)
+	- PayloadSize 	[8]
     }
 */
 
-type ByteNodeMsgHeader struct {
+type BMsgHeader struct {
 	Version     [1]byte
 	MsgType     [1]byte
 	Method      [1]byte
@@ -28,15 +27,40 @@ type ByteNodeMsgHeader struct {
 	Endpoint    [32]byte
 	Auth        [16]byte
 	PayloadType [1]byte
+	PayloadSize [8]byte
 }
 
-type ByteNodeMsg struct {
-	ByteNodeMsgHeader
-	ChunkSize  [4]byte
-	ChunkIndex [4]byte
+type MsgHeader struct {
+	Version     int
+	MsgType     int
+	Method      int
+	Timestamp   int
+	Timeout     time.Duration
+	Domain      string
+	Endpoint    string
+	Auth        string
+	PayloadType int
+	PayloadSize int
+}
+
+// ByteNodeMsg Struktur
+type Msg struct {
+	Header     MsgHeader
+	ChunkSize  int
+	ChunkIndex int
 	ChunkData  []byte
 	ChunkHash  []byte
 }
+
+/*
+	type ByteNodeMsg struct {
+		ChunkSize     [4]byte
+		ChunkIndex    [4]byte
+		ChunkData     []byte
+		ChunkHash     []byte
+		TotalChecksum []byte
+	}
+*/
 
 const (
 	OffsetByteVersion   = iota                     // 0

@@ -90,14 +90,12 @@ func (node *TCPNode) handleConnection(conn net.Conn) {
 	peerAddr := conn.RemoteAddr().String()
 	node.peer[peerAddr] = conn
 	defer conn.Close()
-
-	buffer := make([]byte, 1024)
-	for {
-		n, err := conn.Read(buffer)
+	/*
+		msg, err := transfer.DecodeMsgStream(conn)
 		if err != nil {
 			delete(node.peer, peerAddr)
-			continue
-		}
-		node.receive <- buffer[:n]
-	}
+			conn.Close()
+		}*/
+	//buffer := make([]byte, 1024)
+
 }
