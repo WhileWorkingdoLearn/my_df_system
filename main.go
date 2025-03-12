@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	transfer "github.com/WhileCodingDoLearn/my_df_system/protocol"
+	transfer "github.com/WhileCodingDoLearn/my_df_system/encoding"
 )
 
 func main() {
