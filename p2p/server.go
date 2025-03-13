@@ -3,19 +3,21 @@ package p2p
 import (
 	"fmt"
 	"net"
+
+	"github.com/WhileCodingDoLearn/my_df_system/msg"
 )
 
 type TCPNode struct {
 	peer     map[string]net.Conn
 	listener net.Listener
-	receive  chan []byte
+	receive  chan msg.MsgHeader
 	quit     chan struct{}
 }
 
 func NewTCPServer() TCPNode {
 	return TCPNode{
 		peer:    make(map[string]net.Conn),
-		receive: make(chan []byte, 10),
+		receive: make(chan msg.MsgHeader, 10),
 		quit:    make(chan struct{}),
 	}
 }
@@ -36,7 +38,7 @@ func (n *TCPNode) StartListening(port int) error {
 
 	go func() {
 		for {
-			conn, err := ln.Accept()
+			conn, err := n.listener.Accept()
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -70,7 +72,7 @@ func (n *TCPNode) SendMsg(peer string, msg []byte) error {
 	return nil
 }
 
-func (n *TCPNode) ReceiveMsg() ([]byte, error) {
+func (n *TCPNode) ReceiveMsg() (msg.MsgHeader, error) {
 
 	msg := <-n.receive
 
@@ -90,12 +92,12 @@ func (node *TCPNode) handleConnection(conn net.Conn) {
 	peerAddr := conn.RemoteAddr().String()
 	node.peer[peerAddr] = conn
 	defer conn.Close()
-	/*
-		msg, err := transfer.DecodeMsgStream(conn)
-		if err != nil {
-			delete(node.peer, peerAddr)
-			conn.Close()
-		}*/
+	msgHeader, err := msg.DecodeMsgHeader(conn)
+	if err != nil {
+		delete(node.peer, peerAddr)
+		conn.Close()
+	}
+	node.receive <- msgHeader
 	//buffer := make([]byte, 1024)
 
 }

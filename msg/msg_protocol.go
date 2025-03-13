@@ -1,4 +1,4 @@
-package encoding
+package msg
 
 import "time"
 
@@ -17,19 +17,6 @@ Protocol structure
     }
 */
 
-type BMsgHeader struct {
-	Version     [1]byte
-	MsgType     [1]byte
-	Method      [1]byte
-	Timestamp   [8]byte
-	Timeout     [4]byte
-	Domain      [32]byte
-	Endpoint    [32]byte
-	Auth        [16]byte
-	PayloadType [1]byte
-	PayloadSize [8]byte
-}
-
 type MsgHeader struct {
 	Version     int
 	MsgType     int
@@ -38,7 +25,9 @@ type MsgHeader struct {
 	Timeout     time.Duration
 	Domain      string
 	Endpoint    string
+	HasAuth     bool
 	Auth        string
+	HasPayload  bool
 	PayloadType int
 	PayloadSize int
 }
@@ -53,32 +42,6 @@ type Msg struct {
 }
 
 /*
-	type ByteNodeMsg struct {
-		ChunkSize     [4]byte
-		ChunkIndex    [4]byte
-		ChunkData     []byte
-		ChunkHash     []byte
-		TotalChecksum []byte
-	}
-*/
-
-const (
-	OffsetByteVersion   = iota                     // 0
-	OffsetByteMsgType                              // 1
-	OffsetByteMethod                               // 2
-	OffsetByteTimestamp = OffsetByteMethod + 1     // 8
-	OffsetByteTimeout   = OffsetByteTimestamp + 4  // 12
-	OffsetByteDomain    = OffsetByteTimeout + 4    // 16
-	OffsetByteEndpoint  = OffsetByteTimestamp + 32 // 48
-	OffsetByteAuth      = OffsetByteTimeout + 32   // 80
-	OffsetByteDataType  = OffsetByteAuth + 16      // 96
-	MsgHeaderEnd        = OffsetByteDataType + 1   //97
-
-	OffsetByteChunkSize  = MsgHeaderEnd + 1 //
-	OffsetByteChunkIndex = OffsetByteChunkSize + 4
-)
-
-/*
 Value	Typ	Examples
 0	Unbekannt	-
 1	JSON	application/json
@@ -88,7 +51,7 @@ Value	Typ	Examples
 5	Video	video/mp4
 6	Audio	audio/mpeg
 7	Custom (defined through sender)
-*/
+
 
 const (
 	data_unkown = iota
@@ -100,3 +63,4 @@ const (
 	data_audio
 	data_custom
 )
+*/

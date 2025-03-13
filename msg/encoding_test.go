@@ -1,4 +1,4 @@
-package encoding
+package msg
 
 import (
 	"bytes"
@@ -16,18 +16,19 @@ func TestEncoding(t *testing.T) {
 		Timestamp:   int(time.Now().Unix()),
 		Timeout:     time.Duration(3) * time.Second,
 		Domain:      "blabal",
-		Endpoint:    "v1/dv",
+		Endpoint:    "v1\\dv",
+		HasAuth:     false,
 		Auth:        "mykey",
+		HasPayload:  false,
 		PayloadType: 1,
 		PayloadSize: 10,
 	}
-
-	data, err := EncodeMsg(msgHheader)
+	data, err := EncodeMsgHeader(msgHheader)
 	if err != nil {
 		t.Fatal()
 	}
 
-	msg, err := DecodeMsgStream(bytes.NewBuffer(data))
+	msg, err := DecodeMsgHeader(bytes.NewBuffer(data))
 	if err != nil {
 		t.Fatal()
 	}
