@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/WhileCodingDoLearn/my_df_system/msg"
+	handler "github.com/WhileCodingDoLearn/my_df_system/msghandler"
 )
 
 type TCPNode struct {
@@ -12,9 +13,10 @@ type TCPNode struct {
 	listener net.Listener
 	receive  chan msg.MsgHeader
 	quit     chan struct{}
+	mux      handler.SeverMux
 }
 
-func NewTCPServer() TCPNode {
+func NewServer() TCPNode {
 	return TCPNode{
 		peer:    make(map[string]net.Conn),
 		receive: make(chan msg.MsgHeader, 10),

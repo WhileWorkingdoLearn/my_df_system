@@ -1,52 +1,46 @@
 package handler
 
-import "time"
+import (
+	"context"
+	"time"
 
-type Request interface {
-	Version() int
-	MsgType() int
-	LifeTime() time.Duration
-	Auth() string
-	Size() int
-	Index() int
-	Payload() []byte
+	"github.com/WhileCodingDoLearn/my_df_system/msg"
+)
+
+type Request struct {
+	msgHeader msg.MsgHeader
+	ctx       context.Context
 }
 
-type request struct {
-	version     int
-	msgType     int
-	timeout     time.Duration
-	auth        string
-	payloadType string
-	size        int
-	index       int
-	payload     []byte
+func (r *Request) MsgType() string { return convertMsgType(r.msgHeader.MsgType).String() }
+
+func (r *Request) Method() string { return convertMethod(r.msgHeader.Method).String() }
+
+func (r *Request) Timestamp() time.Time {
+	t := time.Unix(int64(r.msgHeader.Timestamp), 0)
+	return t.UTC()
 }
 
-func (r *request) Version() int {
-	return r.version
+func (r *Request) Domain() string {
+	return r.msgHeader.Domain
 }
 
-func (r *request) MsgType() int {
-	return r.msgType
+func (r *Request) Endpoint() string {
+	return r.msgHeader.Endpoint
 }
 
-func (r *request) LifeTime() time.Duration {
-	return r.timeout
+func (r *Request) Authentification() string {
+	return r.msgHeader.Auth
 }
 
-func (r *request) Auth() string {
-	return r.auth
+func (r *Request) PayloadType() string {
+	return convertMediaType(r.msgHeader.PayloadType).String()
 }
 
-func (r *request) Size() int {
-	return r.index
+func (r *Request) PayloadSyize() int {
+	return r.msgHeader.PayloadSize
 }
 
-func (r *request) Index() int {
-	return r.index
-}
-
-func (r *request) Payload() []byte {
-	return r.payload
+func (r *Request) ReadPayload() []byte {
+	return nil
 }

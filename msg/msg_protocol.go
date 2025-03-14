@@ -11,7 +11,9 @@ Protocol structure
   	- Timeout     	[4]byte   relative timeout (uint32, 4 Bytes, milliseconds since receiving)
 	- Domain      	[32]byte
 	- Endpoint   	[32]byte
+	- HasAuth     	1 bit	// FLag for has Auth. If set to false payload type and size get ignored
   	- Auth        	[16]byte // Authentification-Token or Signature (HMAC, JWT-Hash, etc.)
+	- HasPayload	1 bit	// FLag for has payload. If set to false payload type and size get ignored
   	- PayloadType 	[1]byte  // Typ e ofPayload (1 = JSON, 2 = Text, 3 = Binary, etc.)
 	- PayloadSize 	[8]
     }
@@ -32,7 +34,6 @@ type MsgHeader struct {
 	PayloadSize int
 }
 
-// ByteNodeMsg Struktur
 type Msg struct {
 	Header     MsgHeader
 	ChunkSize  int
@@ -40,27 +41,3 @@ type Msg struct {
 	ChunkData  []byte
 	ChunkHash  []byte
 }
-
-/*
-Value	Typ	Examples
-0	Unbekannt	-
-1	JSON	application/json
-2	Text (UTF-8)	text/plain
-3	Binary	application/octet-stream
-4	Picture	image/png
-5	Video	video/mp4
-6	Audio	audio/mpeg
-7	Custom (defined through sender)
-
-
-const (
-	data_unkown = iota
-	data_json
-	data_text_utf8
-	data_binary
-	data_picture
-	data_video
-	data_audio
-	data_custom
-)
-*/
