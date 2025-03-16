@@ -12,6 +12,10 @@ type Request struct {
 	ctx       context.Context
 }
 
+func NewRequest(msg msg.MsgHeader, ctx context.Context) *Request {
+	return &Request{msgHeader: msg, ctx: ctx}
+}
+
 func (r *Request) MsgType() string { return convertMsgType(r.msgHeader.MsgType).String() }
 
 func (r *Request) Method() string { return convertMethod(r.msgHeader.Method).String() }
@@ -42,5 +46,6 @@ func (r *Request) PayloadSyize() int {
 }
 
 func (r *Request) ReadPayload() []byte {
+
 	return nil
 }

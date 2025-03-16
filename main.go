@@ -1,43 +1,37 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/WhileCodingDoLearn/my_df_system/msg"
+	handler "github.com/WhileCodingDoLearn/my_df_system/msghandler"
+	"github.com/WhileCodingDoLearn/my_df_system/p2p"
 )
 
 func main() {
 
-	msgHheader := msg.MsgHeader{
-		Version:     1,
-		MsgType:     2,
-		Method:      3,
-		Timestamp:   int(time.Now().Unix()),
-		Timeout:     time.Duration(3) * time.Second,
-		Domain:      "blabal",
-		Endpoint:    "v1\\dv",
-		HasAuth:     false,
-		Auth:        "mykey",
-		HasPayload:  false,
-		PayloadType: 1,
-		PayloadSize: 10,
-	}
+	mux := handler.NewServerMux("Hello world Domain")
+	mux.HandleFunc("/v1", handler.FETCH.String(), func(res handler.ResponseWriter, req *handler.Request) {
+		fmt.Println(req.Endpoint())
+	})
 
-	data, err := msg.EncodeMsgHeader(msgHheader)
-	if err != nil {
-		log.Fatal("Ecode:", err)
-	}
+	sever := p2p.NewServer(p2p.Config{
+		Timeout: 10 * time.Second,
+		Port:    3000,
+		Mux:     mux,
+	})
 
-	fmt.Println(data)
+	go func() {
 
-	msg, err := msg.DecodeMsgHeader(bytes.NewBuffer(data))
-	if err != nil {
-		log.Fatal("Decode:", err)
-	}
+		time.Sleep(1 * time.Second)
 
-	fmt.Println(msgHheader)
-	fmt.Println(msg)
+		p2p.StartClient(":3000")
+
+		time.Sleep(1 * time.Second)
+
+		sever.Close()
+
+	}()
+
+	sever.StartListening()
 }

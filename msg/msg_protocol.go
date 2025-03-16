@@ -32,6 +32,7 @@ type MsgHeader struct {
 	HasPayload  bool
 	PayloadType int
 	PayloadSize int
+	Checksum    int
 }
 
 type Msg struct {

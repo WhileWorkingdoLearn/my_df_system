@@ -1,7 +1,6 @@
 package msg
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -145,9 +144,9 @@ func ValidateCRC32Checksum(data []byte, expectedChecksum uint32) bool {
 // DecodeMsgStream reads a MsgHeader structure from a stream.
 // This function reads a binary stream and decodes it into a MsgHeader structure,
 // following the expected field sizes and format.
-func DecodeMsgHeader(r io.Reader) (MsgHeader, error) {
-	buffreader := bufio.NewReader(r)
-
+func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
+	headerBuffer := bytes.NewBuffer([]byte{})
+	buffreader := io.TeeReader(reader, headerBuffer)
 	var msg MsgHeader
 	var err error
 
@@ -203,6 +202,17 @@ func DecodeMsgHeader(r io.Reader) (MsgHeader, error) {
 			}
 		}
 	}
+
+	if msg.Checksum, err = readInt(reader, 4); err != nil {
+		return msg, err
+	}
+
+	isValid := ValidateCRC32Checksum(headerBuffer.Bytes(), uint32(msg.Checksum))
+	if !isValid {
+		return msg, fmt.Errorf("invalid msg header")
+	}
+
+	headerBuffer.Reset()
 
 	return msg, nil
 }

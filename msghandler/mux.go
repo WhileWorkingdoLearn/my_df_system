@@ -1,6 +1,8 @@
 package handler
 
-import "log"
+import (
+	"log"
+)
 
 type HandleMethod struct {
 	Path   string
@@ -11,7 +13,8 @@ type DNS map[HandleMethod]MsgHandler
 
 type SeverMux interface {
 	Handle(path, method string, handle MsgHandler)
-	ServeNMsgP(rw ResponseWriter, req *Request)
+	HandleFunc(path, method string, handle func(res ResponseWriter, req *Request))
+	Handler(r *Request) (h MsgHandler, pattern string)
 }
 
 type Mux struct {
@@ -29,15 +32,23 @@ func NewServerMux(domainName string) SeverMux {
 
 func (mx *Mux) Handle(path, method string, handle MsgHandler) {
 	hm := HandleMethod{Path: path, Method: method}
+
 	if _, found := mx.dns[hm]; found {
 		log.Fatal("handler for path already defined")
 	}
+
 	mx.dns[hm] = handle
 }
 
-func (mx *Mux) ServeNMsgP(rw ResponseWriter, req *Request) {
+func (mx *Mux) HandleFunc(path, method string, handle func(res ResponseWriter, req *Request)) {
+}
+
+func (mx *Mux) Handler(req *Request) (h MsgHandler, pattern string) {
 	hm := HandleMethod{Path: req.msgHeader.Endpoint, Method: req.Method()}
+
 	if msgH, found := mx.dns[hm]; found {
-		go msgH.ForwardMsg(rw, req)
+		return msgH, hm.Path
 	}
+
+	return nil, req.msgHeader.Endpoint
 }

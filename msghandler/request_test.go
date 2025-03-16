@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"testing"
 
 	"github.com/WhileCodingDoLearn/my_df_system/msg"
@@ -10,6 +11,7 @@ import (
 func TestConverMsgTypesToString(t *testing.T) {
 	u := Request{
 		msg.MsgHeader{},
+		context.Background(),
 	}
 
 	u.msgHeader.MsgType = IdxPING
