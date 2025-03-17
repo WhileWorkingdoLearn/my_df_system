@@ -6,13 +6,17 @@ import (
 )
 
 type Stream struct {
-	Data <-chan byte
+	Data      <-chan byte
+	Closed    chan bool
+	hasclosed bool
 }
 
-func NewStream(data []byte) *Stream {
-	ch := make(chan byte, 2)
+func NewStream(data []byte) Reader {
+	ch := make(chan byte, 1)
+	Closed := make(chan bool, 1)
 	go func() {
 		defer close(ch)
+		defer close(Closed)
 		for _, item := range data {
 			min := 50
 			max := 100
@@ -20,22 +24,16 @@ func NewStream(data []byte) *Stream {
 			time.Sleep(time.Duration(randomIntInRange) * time.Millisecond)
 			ch <- item
 		}
+		Closed <- true
 	}()
-	return &Stream{Data: ch}
+	return &Stream{Data: ch, Closed: Closed, hasclosed: false}
 }
 
 type Reader interface {
 	Read(p []byte) (n int, err error)
 }
 
-func NewReader() Reader {
-	return Stream{}
-}
+func (r *Stream) Read(p []byte) (int, error) {
 
-func (r Stream) Read(buff []byte) (int, error) {
-	res := <-r.Data
-	for range len(buff) {
-		buff = append(buff, res)
-	}
-	return len(buff), nil
+	return 0, nil
 }

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/WhileCodingDoLearn/my_df_system/msg"
-	handler "github.com/WhileCodingDoLearn/my_df_system/msghandler"
 )
 
 func StartClient(serverAddr string) {
@@ -21,8 +20,8 @@ func StartClient(serverAddr string) {
 
 	msgH := msg.MsgHeader{
 		Version:    1,
-		MsgType:    handler.IdxPING,
-		Method:     handler.IdxFETCH,
+		MsgType:    msg.IdxPING,
+		Method:     msg.IdxFETCH,
 		Timestamp:  int(time.Now().Unix()),
 		Timeout:    3 * time.Second,
 		Domain:     "MyDomain",

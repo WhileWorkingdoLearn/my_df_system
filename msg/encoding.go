@@ -87,7 +87,7 @@ func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 
 	if msg.HasPayload {
 
-		buffer.WriteByte(byte(msg.PayloadType)) 
+		buffer.WriteByte(byte(msg.PayloadType))
 
 		payloadSizeBytes := make([]byte, 8)
 		binary.BigEndian.PutUint64(payloadSizeBytes, uint64(msg.PayloadSize))
@@ -151,34 +151,34 @@ func ValidateCRC32Checksum(data []byte, expectedChecksum uint32) bool {
 // This function reads a binary stream and decodes it into a MsgHeader structure,
 // following the expected field sizes and format.
 func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
-	headerBuffer := bytes.NewBuffer([]byte{})
+	headerBuffer := bytes.NewBuffer(make([]byte, 0))
 	buffreader := io.TeeReader(reader, headerBuffer)
 	var msg MsgHeader
 	var err error
 
 	if msg.Version, err = readInt(buffreader, 1); err != nil {
-		return msg, err
+		return msg, fmt.Errorf("error with version: %w", err)
 	}
 
 	if msg.MsgType, err = readInt(buffreader, 1); err != nil {
-		return msg, err
+		return msg, fmt.Errorf("error with msg type: %w", err)
 	}
 
 	if msg.Error, err = readInt(buffreader, 4); err != nil {
-		return msg, err
+		return msg, fmt.Errorf("error with errortype: %w", err)
 	}
 
 	if msg.Method, err = readInt(buffreader, 1); err != nil {
-		return msg, err
+		return msg, fmt.Errorf("error with method: %w", err)
 	}
 
 	if msg.Timestamp, err = readInt(buffreader, 8); err != nil {
-		return msg, err
+		return msg, fmt.Errorf("error with timestamp: %w", err)
 	}
 
 	timeoutSec, err := readInt(buffreader, 4)
 	if err != nil {
-		return msg, err
+		return msg, fmt.Errorf("error with timeout: %w", err)
 	}
 	msg.Timeout = time.Duration(timeoutSec) * time.Second
 

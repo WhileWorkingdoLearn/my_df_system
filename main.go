@@ -1,61 +1,44 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/WhileCodingDoLearn/my_df_system/msg"
 	sim "github.com/WhileCodingDoLearn/my_df_system/simulation"
 )
 
 func main() {
-	buff := make([]byte, 4)
-	_, err := sim.NewReader().Read(buff)
-	if err != nil {
 
+	msgHheader := msg.MsgHeader{
+		Version:     1,
+		MsgType:     msg.IdxPING,
+		Error:       msg.None,
+		Method:      msg.IdxFETCH,
+		Timestamp:   int(time.Now().Unix()),
+		Timeout:     time.Duration(3) * time.Second,
+		Domain:      "blabal",
+		Endpoint:    "v1\\dv",
+		HasAuth:     false,
+		Auth:        "mykey",
+		HasPayload:  false,
+		PayloadType: 0,
+		PayloadSize: 0,
 	}
-	/*
-	   ch := make(chan []byte, 1)
 
-	   go func() {
+	//buff := make([]byte, 32)
+	encoded, err := msg.EncodeMsgHeader(msgHheader)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	   		nMsg := msg.MsgHeader{
-	   			Version:     1,
-	   			MsgType:     msg.IdxDATA,
-	   			Error:       msg.None,
-	   			Method:      msg.IdxFETCH,
-	   			Timestamp:   int(time.Now().Unix()),
-	   			Timeout:     4 * time.Second,
-	   			Domain:      "Test",
-	   			Endpoint:    "/version",
-	   			HasAuth:     false,
-	   			Auth:        "",
-	   			HasPayload:  true,
-	   			PayloadType: msg.IdxJSON,
-	   			PayloadSize: 10,
-	   			Checksum:    0,
-	   		}
+	r := sim.NewStream(encoded)
+	n, err := msg.DecodeMsgHeader(r)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	   		data, err := msg.EncodeMsgHeader(nMsg)
-	   		if err != nil {
-	   			log.Fatal(err)
-	   		}
-	   		ch <- data
+	fmt.Println(n)
 
-	   		time.Sleep(2 * time.Second)
-	   		payload := []byte("Hello World")
-	   		ch <- payload
-	   	}()
-
-	   data := <-ch
-
-	   r := bytes.NewReader(data)
-	   msg, err := msg.DecodeMsgHeader(r)
-
-	   	if err != nil {
-	   		log.Fatal(err)
-	   	}
-
-	   fmt.Println(msg)
-	   payload := <-ch
-
-	   fmt.Println(string(payload))
-	   close(ch)
-	*/
 }
