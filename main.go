@@ -1,37 +1,61 @@
 package main
 
 import (
-	"fmt"
-	"time"
-
-	handler "github.com/WhileCodingDoLearn/my_df_system/msghandler"
-	"github.com/WhileCodingDoLearn/my_df_system/p2p"
+	sim "github.com/WhileCodingDoLearn/my_df_system/simulation"
 )
 
 func main() {
+	buff := make([]byte, 4)
+	_, err := sim.NewReader().Read(buff)
+	if err != nil {
 
-	mux := handler.NewServerMux("Hello world Domain")
-	mux.HandleFunc("/v1", handler.FETCH.String(), func(res handler.ResponseWriter, req *handler.Request) {
-		fmt.Println(req.Endpoint())
-	})
+	}
+	/*
+	   ch := make(chan []byte, 1)
 
-	sever := p2p.NewServer(p2p.Config{
-		Timeout: 10 * time.Second,
-		Port:    3000,
-		Mux:     mux,
-	})
+	   go func() {
 
-	go func() {
+	   		nMsg := msg.MsgHeader{
+	   			Version:     1,
+	   			MsgType:     msg.IdxDATA,
+	   			Error:       msg.None,
+	   			Method:      msg.IdxFETCH,
+	   			Timestamp:   int(time.Now().Unix()),
+	   			Timeout:     4 * time.Second,
+	   			Domain:      "Test",
+	   			Endpoint:    "/version",
+	   			HasAuth:     false,
+	   			Auth:        "",
+	   			HasPayload:  true,
+	   			PayloadType: msg.IdxJSON,
+	   			PayloadSize: 10,
+	   			Checksum:    0,
+	   		}
 
-		time.Sleep(1 * time.Second)
+	   		data, err := msg.EncodeMsgHeader(nMsg)
+	   		if err != nil {
+	   			log.Fatal(err)
+	   		}
+	   		ch <- data
 
-		p2p.StartClient(":3000")
+	   		time.Sleep(2 * time.Second)
+	   		payload := []byte("Hello World")
+	   		ch <- payload
+	   	}()
 
-		time.Sleep(1 * time.Second)
+	   data := <-ch
 
-		sever.Close()
+	   r := bytes.NewReader(data)
+	   msg, err := msg.DecodeMsgHeader(r)
 
-	}()
+	   	if err != nil {
+	   		log.Fatal(err)
+	   	}
 
-	sever.StartListening()
+	   fmt.Println(msg)
+	   payload := <-ch
+
+	   fmt.Println(string(payload))
+	   close(ch)
+	*/
 }
