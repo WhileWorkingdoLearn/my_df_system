@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/WhileCodingDoLearn/my_df_system/msg"
-	handler "github.com/WhileCodingDoLearn/my_df_system/msghandler"
+	nmsgp "github.com/WhileCodingDoLearn/my_df_system/p2p/mux"
 )
 
 /*
@@ -17,7 +17,7 @@ import (
 */
 
 type Config struct {
-	Mux     handler.SeverMux
+	Mux     nmsgp.SeverMux
 	Timeout time.Duration
 	Port    int
 }
@@ -134,8 +134,8 @@ func (node *TCPNode) handleConnection(conn net.Conn) {
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), msg.Timeout)
-	req := handler.NewRequest(msg, ctx)
-	res := handler.NewResponse()
+	req := nmsgp.NewRequest(msg, ctx)
+	res := nmsgp.NewResponse()
 	defer cancel()
 	f, _ := node.cfg.Mux.Handler(req)
 
@@ -145,6 +145,6 @@ func (node *TCPNode) handleConnection(conn net.Conn) {
 
 }
 
-func (node *TCPNode) sendResponse(res *handler.Response, conn net.Conn) {
+func (node *TCPNode) sendResponse(res *nmsgp.Response, conn net.Conn) {
 
 }

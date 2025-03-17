@@ -1,4 +1,4 @@
-package handler
+package nmsgp
 
 import (
 	"context"
@@ -16,9 +16,9 @@ func NewRequest(msg msg.MsgHeader, ctx context.Context) *Request {
 	return &Request{msgHeader: msg, ctx: ctx}
 }
 
-func (r *Request) MsgType() string { return convertMsgType(r.msgHeader.MsgType).String() }
+func (r *Request) MsgType() string { return msg.ConvertMsgType(r.msgHeader.MsgType).String() }
 
-func (r *Request) Method() string { return convertMethod(r.msgHeader.Method).String() }
+func (r *Request) Method() string { return msg.ConvertMethod(r.msgHeader.Method).String() }
 
 func (r *Request) Timestamp() time.Time {
 	t := time.Unix(int64(r.msgHeader.Timestamp), 0)
@@ -38,7 +38,7 @@ func (r *Request) Authentification() string {
 }
 
 func (r *Request) PayloadType() string {
-	return convertMediaType(r.msgHeader.PayloadType).String()
+	return msg.ConvertMediaType(r.msgHeader.PayloadType).String()
 }
 
 func (r *Request) PayloadSyize() int {

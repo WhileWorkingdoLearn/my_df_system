@@ -1,4 +1,4 @@
-package handler
+package nmsgp
 
 type MsgHeader struct {
 	HasAuth     bool

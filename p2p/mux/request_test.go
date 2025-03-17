@@ -1,4 +1,4 @@
-package handler
+package nmsgp
 
 import (
 	"context"
@@ -14,23 +14,23 @@ func TestConverMsgTypesToString(t *testing.T) {
 		context.Background(),
 	}
 
-	u.msgHeader.MsgType = IdxPING
+	u.msgHeader.MsgType = msg.IdxPING
 
 	assert.Equal(t, "PING", u.MsgType())
 
-	u.msgHeader.MsgType = IdxPONG
+	u.msgHeader.MsgType = msg.IdxPONG
 
 	assert.Equal(t, "PONG", u.MsgType())
 
-	u.msgHeader.MsgType = IdxHEADER
+	u.msgHeader.MsgType = msg.IdxHEADER
 
 	assert.Equal(t, "HEADER", u.MsgType())
 
-	u.msgHeader.MsgType = IdxERROR
+	u.msgHeader.MsgType = msg.IdxERROR
 
 	assert.Equal(t, "ERROR", u.MsgType())
 
-	u.msgHeader.MsgType = idxEND
+	u.msgHeader.MsgType = msg.IdxEND
 
 	assert.Equal(t, "END", u.MsgType())
 }

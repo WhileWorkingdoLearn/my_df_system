@@ -22,6 +22,7 @@ Protocol structure
 type MsgHeader struct {
 	Version     int
 	MsgType     int
+	Error       int
 	Method      int
 	Timestamp   int
 	Timeout     time.Duration
@@ -35,6 +36,7 @@ type MsgHeader struct {
 	Checksum    int
 }
 
+/*
 type Msg struct {
 	Header     MsgHeader
 	ChunkSize  int
@@ -42,3 +44,4 @@ type Msg struct {
 	ChunkData  []byte
 	ChunkHash  []byte
 }
+*/

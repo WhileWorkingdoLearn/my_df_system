@@ -1,4 +1,4 @@
-package handler
+package nmsgp
 
 type MsgHandler interface {
 	ForwardMsg(rw ResponseWriter, req *Request)

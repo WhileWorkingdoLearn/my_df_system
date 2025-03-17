@@ -1,4 +1,4 @@
-package handler
+package msg
 
 const (
 	IdxPING = iota
@@ -6,8 +6,8 @@ const (
 	IdxHEADER
 	IdxDATA
 	IdxERROR
-	idxEND
-	idxCUSTOM
+	IdxEND
+	IdxCUSTOM
 )
 
 type MsgType string
@@ -33,7 +33,7 @@ func (m *MsgType) Custom() string  { return "CUSTOM" }
 func (m *MsgType) Unkwown() string { return "UNKNOWN" }
 func (m MsgType) String() string   { return string(m) }
 
-func convertMsgType(msgtype int) MsgType {
+func ConvertMsgType(msgtype int) MsgType {
 
 	switch msgtype {
 	case IdxPING:
@@ -46,9 +46,9 @@ func convertMsgType(msgtype int) MsgType {
 		return DATA
 	case IdxERROR:
 		return ERROR
-	case idxEND:
+	case IdxEND:
 		return END
-	case idxCUSTOM:
+	case IdxCUSTOM:
 		return CUSTOM
 	default:
 		return UNKNOWN
@@ -80,7 +80,7 @@ func (mt *MethodType) Copy() string   { return "COPY" }
 func (mt *MethodType) Delete() string { return "DELETE" }
 func (mt MethodType) String() string  { return string(mt) }
 
-func convertMethod(methodtype int) MethodType {
+func ConvertMethod(methodtype int) MethodType {
 	switch methodtype {
 	case IdxFETCH:
 		return FETCH
@@ -130,7 +130,7 @@ func (mt *MediaType) Audio() string   { return string(AUDIO) }
 func (mt *MediaType) Custom() string  { return string(CUSTOM_MEDIA) }
 func (mt MediaType) String() string   { return string(mt) }
 
-func convertMediaType(mediatype int) MediaType {
+func ConvertMediaType(mediatype int) MediaType {
 	switch mediatype {
 	case IdxJSON:
 		return JSON
@@ -150,3 +150,29 @@ func convertMediaType(mediatype int) MediaType {
 		return UNKOWN_MEDIA
 	}
 }
+
+const (
+	None = iota * 100
+	ErrInfo
+	ErrRedirection
+	ErrClient
+	ErrServer
+)
+
+const (
+	ErrInfo2 = iota + ErrInfo
+)
+
+const (
+	ErrRedirection1 = iota + ErrRedirection
+)
+
+const (
+	ErrVersion = iota + ErrClient
+	ErrMsgType
+)
+
+const (
+	ErrDomain = iota + ErrServer
+	ErrEndpoint
+)

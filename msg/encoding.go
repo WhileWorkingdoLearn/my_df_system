@@ -54,12 +54,18 @@ func WriteChecksum(buffer *bytes.Buffer) {
 // Returns:
 //   - A byte slice containing the serialized data.
 //   - An error if encoding fails.
+
 func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 	buffer := new(bytes.Buffer)
 
 	buffer.WriteByte(byte(msg.Version)) // [1]byte
 	buffer.WriteByte(byte(msg.MsgType)) // [1]byte
-	buffer.WriteByte(byte(msg.Method))  // [1]byte
+
+	errorBytes := make([]byte, 4)
+	binary.BigEndian.PutUint16(errorBytes, uint16(msg.Error))
+	buffer.Write(errorBytes)
+
+	buffer.WriteByte(byte(msg.Method)) // [1]byte
 
 	timestampBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(timestampBytes, uint64(msg.Timestamp))
@@ -81,7 +87,7 @@ func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 
 	if msg.HasPayload {
 
-		buffer.WriteByte(byte(msg.PayloadType)) // [1]byte
+		buffer.WriteByte(byte(msg.PayloadType)) 
 
 		payloadSizeBytes := make([]byte, 8)
 		binary.BigEndian.PutUint64(payloadSizeBytes, uint64(msg.PayloadSize))
@@ -98,7 +104,7 @@ func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 func readInt(r io.Reader, n int) (int, error) {
 	buf := make([]byte, n)
 	if _, err := io.ReadFull(r, buf); err != nil {
-		return 0, fmt.Errorf("Fehler beim Lesen eines %d-Byte-Werts: %w", n, err)
+		return 0, fmt.Errorf("fehler beim lesen eines %d-Byte-Werts: %w", n, err)
 	}
 	switch n {
 	case 1:
@@ -115,7 +121,7 @@ func readInt(r io.Reader, n int) (int, error) {
 func readString(r io.Reader, length int) (string, error) {
 	buf := make([]byte, length)
 	if _, err := io.ReadFull(r, buf); err != nil {
-		return "", fmt.Errorf("Fehler beim Lesen eines Strings (%d Bytes): %w", length, err)
+		return "", fmt.Errorf("fehler beim lesen eines strings (%d Bytes): %w", length, err)
 	}
 	return string(buf), nil
 }
@@ -157,6 +163,11 @@ func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
 	if msg.MsgType, err = readInt(buffreader, 1); err != nil {
 		return msg, err
 	}
+
+	if msg.Error, err = readInt(buffreader, 4); err != nil {
+		return msg, err
+	}
+
 	if msg.Method, err = readInt(buffreader, 1); err != nil {
 		return msg, err
 	}
