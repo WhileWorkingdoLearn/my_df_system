@@ -19,9 +19,9 @@ func main() {
 		Timestamp:   int(time.Now().Unix()),
 		Timeout:     time.Duration(3) * time.Second,
 		Domain:      "blabal",
-		Endpoint:    "v1\\dv",
+		Endpoint:    "v1dv",
 		HasAuth:     false,
-		Auth:        "mykey",
+		Auth:        "",
 		HasPayload:  false,
 		PayloadType: 0,
 		PayloadSize: 0,
@@ -32,13 +32,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(encoded)
+	r := sim.NewStream()
+	r.Start(encoded)
 
-	r := sim.NewStream(encoded)
-	n, err := msg.DecodeMsgHeader(r)
+	h, err := msg.DecodeMsgHeader(r)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(n)
+	fmt.Println(h)
 
 }

@@ -1,32 +1,40 @@
 package sim
 
 import (
+	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
 type Stream struct {
-	Data      <-chan byte
+	Data      chan byte
 	Closed    chan bool
 	hasclosed bool
+	wg        sync.WaitGroup
 }
 
-func NewStream(data []byte) Reader {
+func NewStream() *Stream {
 	ch := make(chan byte, 1)
-	Closed := make(chan bool, 1)
-	go func() {
-		defer close(ch)
-		defer close(Closed)
+	return &Stream{Data: ch, hasclosed: false}
+}
+
+func (s *Stream) Start(data []byte) {
+	s.wg.Wait()
+	s.wg.Add(1)
+	go func(chOne chan<- byte) {
+		defer s.wg.Done()
+		defer close(chOne)
 		for _, item := range data {
+
 			min := 50
 			max := 100
 			randomIntInRange := rand.Intn(max-min+1) + min
 			time.Sleep(time.Duration(randomIntInRange) * time.Millisecond)
-			ch <- item
+			chOne <- item
 		}
-		Closed <- true
-	}()
-	return &Stream{Data: ch, Closed: Closed, hasclosed: false}
+		//s.hasclosed = true
+	}(s.Data)
 }
 
 type Reader interface {
@@ -34,6 +42,22 @@ type Reader interface {
 }
 
 func (r *Stream) Read(p []byte) (int, error) {
+	idx := 0
+	buff := make([]byte, len(p), len(p))
 
-	return 0, nil
+	for idx < len(buff) {
+		v, ok := <-r.Data
+		if !ok {
+			break
+		}
+
+		if v > 0 && ok {
+			buff[idx] = v
+			idx++
+		}
+
+	}
+	copy(p, buff[:idx])
+	fmt.Println(p)
+	return idx, nil
 }
