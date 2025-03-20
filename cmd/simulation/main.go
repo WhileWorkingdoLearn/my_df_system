@@ -1,10 +1,14 @@
-package sim
+package main
 
 import (
+	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/WhileCodingDoLearn/my_df_system/msg"
 )
 
 type Stream struct {
@@ -13,7 +17,7 @@ type Stream struct {
 }
 
 func NewStream() *Stream {
-	ch := make(chan byte, 20)
+	ch := make(chan byte, 1)
 	return &Stream{Data: ch}
 }
 
@@ -53,4 +57,38 @@ func (s *Stream) Read(p []byte) (n int, err error) {
 		n++
 	}
 	return n, nil
+}
+
+func main() {
+	msgHheader := msg.MsgHeader{
+		Version:     1,
+		MsgType:     msg.IdxPING,
+		Error:       msg.None,
+		Method:      msg.IdxFETCH,
+		Timestamp:   time.Now().UTC(),
+		Timeout:     time.Duration(3) * time.Second,
+		Domain:      "blabal",
+		Endpoint:    "v1dv",
+		HasAuth:     false,
+		Auth:        "",
+		HasPayload:  false,
+		PayloadType: 0,
+		PayloadSize: 0,
+	}
+
+	fmt.Println(msgHheader)
+	encoded, err := msg.EncodeMsgHeader(msgHheader)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(encoded)
+	r := NewStream()
+	r.Start(encoded)
+
+	h, err := msg.DecodeMsgHeader(r)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(h)
+
 }
