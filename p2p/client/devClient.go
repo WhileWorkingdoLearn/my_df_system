@@ -56,7 +56,7 @@ func main() {
 		Version:    1,
 		MsgType:    msg.IdxPING,
 		Method:     msg.IdxFETCH,
-		Timestamp:  int(time.Now().Unix()),
+		Timestamp:  time.Now().UTC(),
 		Timeout:    3 * time.Second,
 		Domain:     "MyDomain",
 		Endpoint:   "1",

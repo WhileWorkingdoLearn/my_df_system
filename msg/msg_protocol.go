@@ -24,7 +24,7 @@ type MsgHeader struct {
 	MsgType     int
 	Error       int
 	Method      int
-	Timestamp   int
+	Timestamp   time.Time
 	Timeout     time.Duration
 	Domain      string
 	Endpoint    string

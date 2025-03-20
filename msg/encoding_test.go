@@ -12,7 +12,7 @@ func TestEncoding(t *testing.T) {
 		Version:     1,
 		MsgType:     2,
 		Method:      3,
-		Timestamp:   int(time.Now().Unix()),
+		Timestamp:   time.Now().UTC(),
 		Timeout:     time.Duration(3) * time.Second,
 		Domain:      "blabal",
 		Endpoint:    "v1\\dv",

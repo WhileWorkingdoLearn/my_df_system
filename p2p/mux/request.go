@@ -21,7 +21,7 @@ func (r *Request) MsgType() string { return msg.ConvertMsgType(r.msgHeader.MsgTy
 func (r *Request) Method() string { return msg.ConvertMethod(r.msgHeader.Method).String() }
 
 func (r *Request) Timestamp() time.Time {
-	t := time.Unix(int64(r.msgHeader.Timestamp), 0)
+	t := r.msgHeader.Timestamp
 	return t.UTC()
 }
 

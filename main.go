@@ -16,7 +16,7 @@ func main() {
 		MsgType:     msg.IdxPING,
 		Error:       msg.None,
 		Method:      msg.IdxFETCH,
-		Timestamp:   int(time.Now().Unix()),
+		Timestamp:   time.Now().UTC(),
 		Timeout:     time.Duration(3) * time.Second,
 		Domain:      "blabal",
 		Endpoint:    "v1dv",
@@ -27,7 +27,7 @@ func main() {
 		PayloadSize: 0,
 	}
 
-	//buff := make([]byte, 32)
+	fmt.Println(msgHheader)
 	encoded, err := msg.EncodeMsgHeader(msgHheader)
 	if err != nil {
 		log.Fatal(err)

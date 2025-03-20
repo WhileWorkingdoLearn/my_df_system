@@ -11,8 +11,12 @@ import (
 
 /*
 Encoding Package for decoding and encoding protocol for inter node communication of fileserver nodes.
-
 */
+const (
+	none int = iota
+	initialized
+	done
+)
 
 // writeFixedString writes a fixed-length string to a buffer.
 // If the input is shorter than the specified length, the remaining space
@@ -68,7 +72,7 @@ func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 	buffer.WriteByte(byte(msg.Method)) // [1]byte
 
 	timestampBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timestampBytes, uint64(msg.Timestamp))
+	binary.BigEndian.PutUint64(timestampBytes, uint64(msg.Timestamp.Unix()))
 	buffer.Write(timestampBytes)
 
 	timeoutBytes := make([]byte, 4)
@@ -118,6 +122,15 @@ func readInt(r io.Reader, n int) (int, error) {
 	}
 }
 
+func readTime(r io.Reader) (time.Time, error) {
+	buf := make([]byte, 8)
+	if n, err := io.ReadFull(r, buf); err != nil {
+		return time.Time{}, fmt.Errorf("fehler beim lesen eines %d-Byte-Werts: %w", n, err)
+	}
+	value := int64(binary.BigEndian.Uint64(buf))
+	return time.Unix(value, 0).UTC(), nil
+}
+
 func readString(r io.Reader, length int) (string, error) {
 	buf := make([]byte, length)
 	n, err := io.ReadFull(r, buf)
@@ -160,27 +173,22 @@ func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
 	if msg.Version, err = readInt(buffreader, 1); err != nil {
 		return msg, fmt.Errorf("error with version: %w", err)
 	}
-	fmt.Println("Done Version")
 
 	if msg.MsgType, err = readInt(buffreader, 1); err != nil {
 		return msg, fmt.Errorf("error with msg type: %w", err)
 	}
-	fmt.Println("Done MsgType")
 
 	if msg.Error, err = readInt(buffreader, 4); err != nil {
 		return msg, fmt.Errorf("error with errortype: %w", err)
 	}
-	fmt.Println("Done ErrorCode")
 
 	if msg.Method, err = readInt(buffreader, 1); err != nil {
 		return msg, fmt.Errorf("error with method: %w", err)
 	}
-	fmt.Println("Done Method")
 
-	if msg.Timestamp, err = readInt(buffreader, 8); err != nil {
+	if msg.Timestamp, err = readTime(buffreader); err != nil {
 		return msg, fmt.Errorf("error with timestamp: %w", err)
 	}
-	fmt.Println("Done TImestamp")
 
 	timeoutSec, err := readInt(buffreader, 4)
 	if err != nil {
@@ -188,18 +196,13 @@ func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
 	}
 	msg.Timeout = time.Duration(timeoutSec) * time.Second
 
-	fmt.Println("Done Timeout")
-
 	if msg.Domain, err = readString(buffreader, 32); err != nil {
 		return msg, fmt.Errorf("error with domain: %w", err)
 	}
-	fmt.Println("Done Domain")
 
 	if msg.Endpoint, err = readString(buffreader, 32); err != nil {
 		return msg, fmt.Errorf("error with endpoint: %w", err)
 	}
-
-	fmt.Println("Done Endpoint")
 
 	if msg.HasAuth, err = readBool(buffreader); err != nil {
 		return msg, fmt.Errorf("error with hasAuth: %w", err)
@@ -208,7 +211,6 @@ func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
 			if msg.Auth, err = readString(buffreader, 16); err != nil {
 				return msg, fmt.Errorf("error with auth: %w", err)
 			}
-			fmt.Println("Done Auth")
 		}
 
 	}
@@ -220,11 +222,9 @@ func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
 			if msg.PayloadType, err = readInt(buffreader, 1); err != nil {
 				return msg, fmt.Errorf("error with payloadtype: %w", err)
 			}
-			fmt.Println("Done Payload")
 			if msg.PayloadSize, err = readInt(buffreader, 8); err != nil {
 				return msg, fmt.Errorf("error with payloadsize: %w", err)
 			}
-			fmt.Println("Done Payloadsize")
 		}
 	}
 
@@ -238,6 +238,6 @@ func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
 	}
 
 	headerBuffer.Reset()
-	fmt.Println("Done")
+
 	return msg, nil
 }
