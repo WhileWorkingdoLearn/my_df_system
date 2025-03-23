@@ -63,42 +63,57 @@ func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 	buffer := new(bytes.Buffer)
 
 	buffer.WriteByte(byte(msg.Version)) // [1]byte
+	buffer.WriteByte(byte(':'))
+
 	buffer.WriteByte(byte(msg.MsgType)) // [1]byte
+	buffer.WriteByte(byte(':'))
 
 	errorBytes := make([]byte, 4)
 	binary.BigEndian.PutUint16(errorBytes, uint16(msg.Error))
 	buffer.Write(errorBytes)
+	buffer.WriteByte(byte(':'))
 
 	buffer.WriteByte(byte(msg.Method)) // [1]byte
+	buffer.WriteByte(byte(':'))
 
 	timestampBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(timestampBytes, uint64(msg.Timestamp.Unix()))
 	buffer.Write(timestampBytes)
+	buffer.WriteByte(byte(':'))
 
 	timeoutBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(timeoutBytes, uint32(msg.Timeout.Seconds()))
 	buffer.Write(timeoutBytes)
+	buffer.WriteByte(byte(':'))
 
 	writeFixedString(buffer, msg.Domain, 32)
+	buffer.WriteByte(byte(':'))
 	writeFixedString(buffer, msg.Endpoint, 32)
+	buffer.WriteByte(byte(':'))
 
 	buffer.WriteByte(WriteboolToByte(msg.HasAuth))
+	buffer.WriteByte(byte(':'))
 
 	if msg.HasAuth {
 		writeFixedString(buffer, msg.Auth, 16)
+		buffer.WriteByte(byte(':'))
 	}
 	buffer.WriteByte(WriteboolToByte(msg.HasPayload))
+	buffer.WriteByte(byte(':'))
 
 	if msg.HasPayload {
 
 		buffer.WriteByte(byte(msg.PayloadType))
+		buffer.WriteByte(byte(':'))
 
 		payloadSizeBytes := make([]byte, 8)
 		binary.BigEndian.PutUint64(payloadSizeBytes, uint64(msg.PayloadSize))
 		buffer.Write(payloadSizeBytes)
+		buffer.WriteByte(byte(':'))
 	}
 
 	WriteChecksum(buffer)
+	buffer.Write([]byte("::"))
 
 	return buffer.Bytes(), nil
 }

@@ -26,7 +26,7 @@ func TestEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatal()
 	}
-
+	fmt.Println(data)
 	msg, err := DecodeMsgHeader(bytes.NewBuffer(data))
 	if err != nil {
 		t.Fatal(err)
