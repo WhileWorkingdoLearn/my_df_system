@@ -176,3 +176,20 @@ const (
 	ErrDomain = iota + ErrServer
 	ErrEndpoint
 )
+
+const (
+	version int = iota
+	msgtype
+	errtype
+	methodType
+	timestamp
+	timeout
+	domain
+	endpoint
+	hasAuth
+	auth
+	haspayload
+	payloadtype
+	payloadlength
+	checksum
+)

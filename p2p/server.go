@@ -128,13 +128,14 @@ func (node *TCPNode) handleConnection(conn net.Conn) {
 
 	defer node.removeConnection(id)
 
-	msg, err := msg.DecodeMsgHeader(conn)
+	var msgHeader msg.MsgHeader
+	err := msg.NewDecoder(conn).Decode(&msgHeader)
 	if err != nil {
 		conn.Close()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), msg.Timeout)
-	req := nmsgp.NewRequest(msg, ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), msgHeader.Timeout)
+	req := nmsgp.NewRequest(msgHeader, ctx)
 	res := nmsgp.NewResponse()
 	defer cancel()
 	f, _ := node.cfg.Mux.Handler(req)

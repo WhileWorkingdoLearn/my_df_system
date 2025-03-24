@@ -1,10 +1,11 @@
 package msg
 
 import (
-	"bytes"
-	"fmt"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEncoding(t *testing.T) {
@@ -23,14 +24,11 @@ func TestEncoding(t *testing.T) {
 		PayloadSize: 10,
 	}
 	data, err := EncodeMsgHeader(msgHheader)
-	if err != nil {
-		t.Fatal()
-	}
-	fmt.Println(data)
-	msg, err := DecodeMsgHeader(bytes.NewBuffer(data))
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(msg)
-	//assert.Equal(t, msgHheader, msg, "")
+	require.Nil(t, err)
+	assert.Equal(t, len(data), 102)
+	assert.Equal(t, len(data), 102)
+	assert.Equal(t, data[1], byte(':'))
+	assert.Equal(t, data[len(data)-3], byte(':'))
+	assert.Equal(t, data[len(data)-2], byte('-'))
+	assert.Equal(t, data[len(data)-1], byte(':'))
 }

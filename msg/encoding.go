@@ -3,10 +3,6 @@ package msg
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
-	"hash/crc32"
-	"io"
-	"time"
 )
 
 /*
@@ -31,18 +27,14 @@ func writeFixedString(buf *bytes.Buffer, s string, length int) {
 	buf.Write(b)
 }
 
-func WriteboolToByte(b bool) byte {
+func writeboolToByte(b bool) byte {
 	if b {
 		return 1
 	}
 	return 0
 }
 
-func computeCRC32Checksum(data []byte) uint32 {
-	return crc32.ChecksumIEEE(data)
-}
-
-func WriteChecksum(buffer *bytes.Buffer) {
+func writeChecksum(buffer *bytes.Buffer) {
 	checksum := computeCRC32Checksum(buffer.Bytes())
 	checksumbytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(checksumbytes, checksum)
@@ -91,14 +83,14 @@ func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 	writeFixedString(buffer, msg.Endpoint, 32)
 	buffer.WriteByte(byte(':'))
 
-	buffer.WriteByte(WriteboolToByte(msg.HasAuth))
+	buffer.WriteByte(writeboolToByte(msg.HasAuth))
 	buffer.WriteByte(byte(':'))
 
 	if msg.HasAuth {
 		writeFixedString(buffer, msg.Auth, 16)
 		buffer.WriteByte(byte(':'))
 	}
-	buffer.WriteByte(WriteboolToByte(msg.HasPayload))
+	buffer.WriteByte(writeboolToByte(msg.HasPayload))
 	buffer.WriteByte(byte(':'))
 
 	if msg.HasPayload {
@@ -112,147 +104,8 @@ func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 		buffer.WriteByte(byte(':'))
 	}
 
-	WriteChecksum(buffer)
-	buffer.Write([]byte("::"))
+	writeChecksum(buffer)
+	buffer.Write([]byte(":-:"))
 
 	return buffer.Bytes(), nil
-}
-
-// readInt reads an integer of the specified byte size from a stream.
-// The function supports reading 1-byte, 4-byte, and 8-byte integers in big-endian format.
-func readInt(r io.Reader, n int) (int, error) {
-	buf := make([]byte, n)
-	if _, err := io.ReadFull(r, buf); err != nil {
-		return 0, fmt.Errorf("fehler beim lesen eines %d-Byte-Werts: %w", n, err)
-	}
-	switch n {
-	case 1:
-		return int(buf[0]), nil
-	case 4:
-		return int(binary.BigEndian.Uint32(buf)), nil
-	case 8:
-		return int(binary.BigEndian.Uint64(buf)), nil
-	default:
-		return 0, fmt.Errorf("ungültige Byte-Größe: %d", n)
-	}
-}
-
-func readTime(r io.Reader) (time.Time, error) {
-	buf := make([]byte, 8)
-	if n, err := io.ReadFull(r, buf); err != nil {
-		return time.Time{}, fmt.Errorf("fehler beim lesen eines %d-Byte-Werts: %w", n, err)
-	}
-	value := int64(binary.BigEndian.Uint64(buf))
-	return time.Unix(value, 0).UTC(), nil
-}
-
-func readString(r io.Reader, length int) (string, error) {
-	buf := make([]byte, length)
-	n, err := io.ReadFull(r, buf)
-	if err != nil {
-		return "", fmt.Errorf("fehler beim lesen eines strings (%d Bytes): %w", length, err)
-	}
-	return string(buf[:n]), nil
-}
-
-func readBool(r io.Reader) (bool, error) {
-	var buffer [1]byte
-	_, err := r.Read(buffer[:])
-	if err != nil {
-		return false, fmt.Errorf("error reading byte: %w", err)
-	}
-
-	switch buffer[0] {
-	case 0:
-		return false, nil
-	case 1:
-		return true, nil
-	default:
-		return false, fmt.Errorf("invalid boolean byte: %d", buffer[0])
-	}
-}
-
-func ValidateCRC32Checksum(data []byte, expectedChecksum uint32) bool {
-	return computeCRC32Checksum(data) == expectedChecksum
-}
-
-// DecodeMsgStream reads a MsgHeader structure from a stream.
-// This function reads a binary stream and decodes it into a MsgHeader structure,
-// following the expected field sizes and format.
-func DecodeMsgHeader(reader io.Reader) (MsgHeader, error) {
-	headerBuffer := bytes.NewBuffer(make([]byte, 0))
-	buffreader := io.TeeReader(reader, headerBuffer)
-	var msg MsgHeader
-	var err error
-
-	if msg.Version, err = readInt(buffreader, 1); err != nil {
-		return msg, fmt.Errorf("error with version: %w", err)
-	}
-
-	if msg.MsgType, err = readInt(buffreader, 1); err != nil {
-		return msg, fmt.Errorf("error with msg type: %w", err)
-	}
-
-	if msg.Error, err = readInt(buffreader, 4); err != nil {
-		return msg, fmt.Errorf("error with errortype: %w", err)
-	}
-
-	if msg.Method, err = readInt(buffreader, 1); err != nil {
-		return msg, fmt.Errorf("error with method: %w", err)
-	}
-
-	if msg.Timestamp, err = readTime(buffreader); err != nil {
-		return msg, fmt.Errorf("error with timestamp: %w", err)
-	}
-
-	timeoutSec, err := readInt(buffreader, 4)
-	if err != nil {
-		return msg, fmt.Errorf("error with timeout: %w", err)
-	}
-	msg.Timeout = time.Duration(timeoutSec) * time.Second
-
-	if msg.Domain, err = readString(buffreader, 32); err != nil {
-		return msg, fmt.Errorf("error with domain: %w", err)
-	}
-
-	if msg.Endpoint, err = readString(buffreader, 32); err != nil {
-		return msg, fmt.Errorf("error with endpoint: %w", err)
-	}
-
-	if msg.HasAuth, err = readBool(buffreader); err != nil {
-		return msg, fmt.Errorf("error with hasAuth: %w", err)
-	} else {
-		if msg.HasAuth {
-			if msg.Auth, err = readString(buffreader, 16); err != nil {
-				return msg, fmt.Errorf("error with auth: %w", err)
-			}
-		}
-
-	}
-
-	if msg.HasPayload, err = readBool(buffreader); err != nil {
-		return msg, fmt.Errorf("error with haspayload: %w", err)
-	} else {
-		if msg.HasPayload {
-			if msg.PayloadType, err = readInt(buffreader, 1); err != nil {
-				return msg, fmt.Errorf("error with payloadtype: %w", err)
-			}
-			if msg.PayloadSize, err = readInt(buffreader, 8); err != nil {
-				return msg, fmt.Errorf("error with payloadsize: %w", err)
-			}
-		}
-	}
-
-	if msg.Checksum, err = readInt(reader, 4); err != nil {
-		return msg, err
-	}
-
-	isValid := ValidateCRC32Checksum(headerBuffer.Bytes(), uint32(msg.Checksum))
-	if !isValid {
-		return msg, fmt.Errorf("invalid msg header")
-	}
-
-	headerBuffer.Reset()
-
-	return msg, nil
 }

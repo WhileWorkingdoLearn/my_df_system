@@ -69,13 +69,13 @@ func main() {
 	}
 
 	client.SendMsg(data)
-
-	header, err := msg.DecodeMsgHeader(client.conn)
+	var msgHeader msg.MsgHeader
+	err = msg.NewDecoder(client.conn).Decode(&msgHeader)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(header)
+	fmt.Println(msgHeader)
 
 	client.Close()
 
