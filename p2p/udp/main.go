@@ -82,12 +82,16 @@ type Packet struct {
 }
 
 func (p *Packet) Parse(data []byte) (parsed int, done bool, err error) {
-	seperator := bytes.Index(data, []byte("|"))
-	if seperator == -1 {
+	clrf := bytes.Index(data, []byte("|"))
+	if clrf == -1 {
 		return 0, false, nil
 	}
-	if seperator == 0 {
+	if clrf == 0 {
 		return 0, true, nil
+	}
+	seperator := bytes.Index(data, []byte(":"))
+	if seperator == -1 {
+		return 0, false, nil
 	}
 
 	return 0, true, nil

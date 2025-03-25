@@ -3,6 +3,9 @@ package msg
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"strconv"
+	"strings"
 )
 
 /*
@@ -108,4 +111,64 @@ func EncodeMsgHeader(msg MsgHeader) ([]byte, error) {
 	buffer.Write([]byte(":-:"))
 
 	return buffer.Bytes(), nil
+}
+
+type parser struct {
+	step   int
+	parsed int
+	buffer *bytes.Buffer
+	done   bool
+}
+
+func (p *parser) parse(data string) (int, error) {
+	idx := strings.Index(data, ":")
+	if idx == 0 {
+		p.done = true
+		return 0, nil
+	}
+
+	switch p.step {
+	case 0:
+		versionAsString := strings.TrimSpace(data[:idx])
+		fmt.Println(versionAsString)
+		if version, err := strconv.ParseInt(versionAsString, 10, 64); err != nil {
+			return 0, fmt.Errorf("error with converting version")
+		} else {
+			if p.buffer != nil {
+				p.buffer.WriteByte(byte(version))
+			}
+		}
+		p.step++
+	case 1:
+		p.done = true
+	default:
+		p.done = true
+		return 0, fmt.Errorf("parsing not possible")
+	}
+
+	return idx, nil
+}
+
+func EncodeMsgHeaderFromString(data string) ([]byte, error) {
+	end := strings.Index(data, ":-:")
+	if end == -1 {
+		return nil, fmt.Errorf("no data end was provided")
+	}
+
+	dataToParse := data[:end]
+
+	//buffer := new(bytes.Buffer)
+	p := parser{buffer: bytes.NewBuffer(make([]byte, 0))}
+	parsedFromString := 0
+	for !p.done {
+		parsed, err := p.parse(dataToParse[parsedFromString:])
+		if err != nil {
+			return nil, err
+		}
+		parsedFromString += parsed
+		fmt.Println(parsed)
+	}
+	fmt.Println(p.buffer.Bytes())
+
+	return p.buffer.Bytes(), nil
 }

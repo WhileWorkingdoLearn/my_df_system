@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/WhileCodingDoLearn/my_df_system/msg"
-	nmsgp "github.com/WhileCodingDoLearn/my_df_system/p2p/mux"
+	nmsgp "github.com/WhileCodingDoLearn/my_df_system/p2p/tcp/mux"
 )
 
 /*
