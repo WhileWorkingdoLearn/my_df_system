@@ -81,22 +81,6 @@ type Packet struct {
 	Data         []byte
 }
 
-func (p *Packet) Parse(data []byte) (parsed int, done bool, err error) {
-	clrf := bytes.Index(data, []byte("|"))
-	if clrf == -1 {
-		return 0, false, nil
-	}
-	if clrf == 0 {
-		return 0, true, nil
-	}
-	seperator := bytes.Index(data, []byte(":"))
-	if seperator == -1 {
-		return 0, false, nil
-	}
-
-	return 0, true, nil
-}
-
 const (
 	Init uint8 = iota
 	Ack
@@ -137,18 +121,10 @@ func main() {
 		}
 		buff.WriteByte(':')
 		buff.Write(packet.Data)
+		buff.WriteByte(':')
 		buff.WriteString(("|"))
 		MSGS = append(MSGS, buff.Bytes())
 	}
-
-	conn := NewUDP(MSGS)
-	buff := make([]byte, 128, 128)
-	n, err := conn.Read(buff)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println(buff[:n])
 
 }
 
