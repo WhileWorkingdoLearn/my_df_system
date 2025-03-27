@@ -2,78 +2,73 @@ package msg
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Parse(buff []byte) (int, bool) {
-	sep := bytes.Index(buff, []byte{':'})
-	end := false
-	if sep != -1 {
-		if sep < len(buff)-2 && buff[sep+1] == byte('-') && buff[sep+2] == byte(':') {
-			end = true
-		}
-		return sep, end
-	}
+func TestHeaderParser(t *testing.T) {
 
-	return 0, end
-}
+	buff := bytes.NewBuffer(make([]byte, 0))
+	buff.WriteByte(10)
+	buff.WriteRune(':')
+	buff.WriteString("SenderId")
+	buff.WriteRune(':')
+	buff.WriteString("Key")
+	buff.WriteRune(':')
+	buff.WriteString("TimeStamp")
+	buff.WriteRune(':')
+	buff.WriteString("Version")
+	buff.Write([]byte(":-:"))
 
-func TestParse(t *testing.T) {
-	//Testing closing paragraphs
-	b := []byte("aabb:-:c")
-	parsed, end := Parse(b)
-	assert.Equal(t, 4, parsed)
-	assert.True(t, end)
+	testb := buff.Bytes()
+	hp := NewHeaderParser()
 
-	//Testing seperator
-	b = []byte("aabb:c")
-	parsed, end = Parse(b)
-	assert.Equal(t, 4, parsed)
-	assert.False(t, end)
+	parsed := 0
+	n, done, err := hp.parseHeader(testb)
+	fmt.Println(n)
+	require.Nil(t, err)
+	assert.False(t, done)
+	assert.Equal(t, 2, n)
 
-	// Testing nor included
-	b = []byte("aabbc")
-	parsed, end = Parse(b)
-	assert.Equal(t, 0, parsed)
-	assert.False(t, end)
+	parsed += n
+	n, done, err = hp.parseHeader(testb[parsed:])
 
-	//testing two seperator
-	b = []byte("a:b:bc")
-	parsed, end = Parse(b)
-	assert.Equal(t, 1, parsed)
-	assert.False(t, end)
-}
+	require.Nil(t, err)
+	assert.False(t, done)
+	assert.Equal(t, "SenderId", string(hp.header.SenderId))
+	parsed += n
 
-func TestDecode(t *testing.T) {
-	msgHheader := MsgHeader{
-		Version:     1,
-		MsgType:     IdxPING,
-		Error:       ErrDomain,
-		Method:      IdxFETCH,
-		Timestamp:   time.Now().UTC(),
-		Timeout:     time.Duration(3) * time.Second,
-		Domain:      "blabal",
-		Endpoint:    "v1dv",
-		HasAuth:     false,
-		Auth:        "",
-		HasPayload:  false,
-		PayloadType: 0,
-		PayloadSize: 0,
-	}
+	n, done, err = hp.parseHeader(testb[parsed:])
 
-	encoded, err := EncodeMsgHeader(msgHheader)
-	if err != nil {
-		t.Fatal(err)
-	}
+	fmt.Println(hp.header)
+	require.Nil(t, err)
+	assert.False(t, done)
+	assert.Equal(t, "Key", string(hp.header.Key))
+	parsed += n
 
-	r := bytes.NewReader(encoded)
-	var msgH MsgHeader
-	dec := NewDecoder(r)
-	errDec := dec.Decode(&msgH)
-	require.Nil(t, errDec)
-	assert.Equal(t, 89, dec.Parsed())
+	n, done, err = hp.parseHeader(testb[parsed:])
+
+	fmt.Println(hp.header)
+	require.Nil(t, err)
+	assert.False(t, done)
+	assert.Equal(t, "TimeStamp", string(hp.header.TimeStamp))
+	parsed += n
+
+	n, done, err = hp.parseHeader(testb[parsed:])
+
+	fmt.Println(hp.header)
+	require.Nil(t, err)
+	assert.False(t, done)
+	assert.Equal(t, "Version", string(hp.header.Version))
+	parsed += n
+
+	n, done, err = hp.parseHeader(testb[parsed:])
+	fmt.Println(hp.header)
+	require.Nil(t, err)
+	assert.True(t, done)
+	assert.Equal(t, 2, n)
+
 }

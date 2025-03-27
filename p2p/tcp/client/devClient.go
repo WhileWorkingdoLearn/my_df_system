@@ -2,11 +2,8 @@ package p2p
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"time"
-
-	"github.com/WhileCodingDoLearn/my_df_system/msg"
 )
 
 type Client struct {
@@ -49,34 +46,5 @@ func (c *Client) Close() {
 }
 
 func main() {
-	// Nachricht erstellen und senden
-	client := NewClient(":3000")
-
-	msgH := msg.MsgHeader{
-		Version:    1,
-		MsgType:    msg.IdxPING,
-		Method:     msg.IdxFETCH,
-		Timestamp:  time.Now().UTC(),
-		Timeout:    3 * time.Second,
-		Domain:     "MyDomain",
-		Endpoint:   "1",
-		HasAuth:    false,
-		HasPayload: false,
-	}
-	data, err := msg.EncodeMsgHeader(msgH)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	client.SendMsg(data)
-	var msgHeader msg.MsgHeader
-	err = msg.NewDecoder(client.conn).Decode(&msgHeader)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(msgHeader)
-
-	client.Close()
 
 }

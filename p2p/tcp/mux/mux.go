@@ -1,9 +1,6 @@
 package nmsgp
 
-import (
-	"log"
-)
-
+/*
 type HandleMethod struct {
 	Path   string
 	Method string
@@ -52,3 +49,4 @@ func (mx *Mux) Handler(req *Request) (h MsgHandler, pattern string) {
 
 	return nil, req.msgHeader.Endpoint
 }
+*/

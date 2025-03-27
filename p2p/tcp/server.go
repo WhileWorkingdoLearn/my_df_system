@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"sync"
@@ -17,7 +16,7 @@ import (
 */
 
 type Config struct {
-	Mux     nmsgp.SeverMux
+	Mux     int
 	Timeout time.Duration
 	Port    int
 }
@@ -27,7 +26,7 @@ type TCPNode struct {
 	peer     map[string]net.Conn
 	peerLock sync.RWMutex
 	listener net.Listener
-	receive  chan msg.MsgHeader
+	receive  chan msg.Message
 	quit     chan struct{}
 	wg       sync.WaitGroup
 }
@@ -35,7 +34,7 @@ type TCPNode struct {
 func NewServer(cfg Config) TCPNode {
 	return TCPNode{
 		peer:    make(map[string]net.Conn),
-		receive: make(chan msg.MsgHeader, 10),
+		receive: make(chan msg.Message, 10),
 		quit:    make(chan struct{}),
 		cfg:     cfg,
 	}
@@ -91,7 +90,7 @@ func (n *TCPNode) SendMsg(peer string, msg []byte) error {
 	return nil
 }
 
-func (n *TCPNode) ReceiveMsg() (msg.MsgHeader, error) {
+func (n *TCPNode) ReceiveMsg() (msg.Message, error) {
 
 	msg := <-n.receive
 
@@ -128,22 +127,23 @@ func (node *TCPNode) handleConnection(conn net.Conn) {
 
 	defer node.removeConnection(id)
 
-	var msgHeader msg.MsgHeader
-	err := msg.NewDecoder(conn).Decode(&msgHeader)
+	p := msg.NewDecoder()
+	p.Decode(conn)
+	err := p.Decode(conn)
 	if err != nil {
 		conn.Close()
 	}
+	/*
+		ctx, cancel := context.WithTimeout(context.Background(), )
+		req := nmsgp.NewRequest(msgHeader, ctx)
+		res := nmsgp.NewResponse()
+		defer cancel()
+		f, _ := node.cfg.Mux.Handler(req)
 
-	ctx, cancel := context.WithTimeout(context.Background(), msgHeader.Timeout)
-	req := nmsgp.NewRequest(msgHeader, ctx)
-	res := nmsgp.NewResponse()
-	defer cancel()
-	f, _ := node.cfg.Mux.Handler(req)
+		f.ForwardMsg(res, req)
 
-	f.ForwardMsg(res, req)
-
-	node.sendResponse(res, conn)
-
+		node.sendResponse(res, conn)
+	*/
 }
 
 func (node *TCPNode) sendResponse(res *nmsgp.Response, conn net.Conn) {

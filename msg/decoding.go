@@ -2,248 +2,221 @@ package msg
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
-	"time"
 )
 
-//Message Decoder. Converts a Message Header from its binary representation to a Msg Struct format.
-//This Decoder throws an error if it encounters an error with byte size aligment.
-//If an error it thrown, the whole message is seen as invalid.
-//
-//Example:
-//	r := bytes.NewReader(/*header bytes*/)
-//	var msgH msg.MsgHeader
-//	dec := NewDecoder(r)
-//	errDec := dec.Decode(&msgH)
-//	if errDec != nil {
-//		fmt.Println(errDec)
-//	}
-
 type Decoder struct {
-	reader io.Reader
-	buffer *bytes.Buffer
-	parsed int
-	step   int
-	read   int
-	done   bool
-	err    error
+	persers      ParserHandler
+	headerparser HeaderParser
+	state        ParserState
+	err          error
 }
 
-func NewDecoder(reader io.Reader) *Decoder {
-	return &Decoder{reader: reader, buffer: bytes.NewBuffer(make([]byte, 0))}
+func NewDecoder() *Decoder {
+	return &Decoder{}
 }
 
-func (decoder *Decoder) Parsed() int {
-	return decoder.parsed
-}
-
-func (decoder *Decoder) Buffered() []byte {
-	return decoder.buffer.Bytes()
-}
-
-func (msg *Decoder) Done() bool {
-	return msg.done
-}
-
-func (decoder *Decoder) Decode(msgHeader *MsgHeader) error {
-	if msgHeader == nil {
-		return fmt.Errorf("message header is nil")
+func (p *Decoder) Decode(r io.Reader) error {
+	//readHeader
+	err := p.parse(r, ReadHeader, p.headerparser.parseHeader)
+	if err != nil {
+		p.state = ErrorHeader
+		p.err = err
+		return err
 	}
-	readIndex := 0
-	readDone := false
-	readbuffer := make([]byte, 8, 8)
-	for !decoder.done {
 
-		if readIndex >= len(readbuffer) {
-			newBuff := make([]byte, len(readbuffer)*2, len(readbuffer)*2)
-			copy(newBuff, readbuffer)
-			readbuffer = newBuff
+	bodyparser, found := p.persers[p.headerparser.header.MsgType[0]]
+	if !found {
+		return fmt.Errorf("no parser vor version found: %v", string(p.headerparser.header.MsgType[0]))
+	}
+	err = p.parse(r, ReadBody, bodyparser)
+	if err != nil {
+		p.state = ErrorBody
+		p.err = err
+		return err
+	}
+	return nil
+
+}
+
+func (p *Decoder) parse(r io.Reader, state ParserState, parser ParseFunc) error {
+	buffer := make([]byte, 8, 8) // Anfangsgröße des Buffers
+	read := 0
+
+	for p.state == state {
+		if read >= len(buffer) {
+			nBuff := make([]byte, len(buffer)*2, len(buffer)*2)
+			copy(nBuff, buffer)
+			buffer = nBuff
 		}
 
-		if !readDone {
-			n, err := decoder.reader.Read(readbuffer[readIndex:])
-			if err != nil {
-				if err == io.EOF {
-					readDone = true
-				} else {
-					fmt.Println(err)
-					decoder.err = err
-					return err
-				}
+		n, err := r.Read(buffer[read:])
+		if err != nil {
+			if err == io.EOF {
+				p.state = Done
+			} else {
+				fmt.Println(err)
+				return err
 			}
-			decoder.read += n
-			readIndex += n
+		}
+		read += n
+
+		parsed, done, err := parser.Handle(buffer[:read])
+
+		if err != nil {
+			p.state = Done
+			return fmt.Errorf("parsing error: %w", err)
 		}
 
-		parsed, hasEnd, errParse := decoder.parse(readbuffer[:readIndex], msgHeader)
-		if errParse != nil {
-			decoder.err = errParse
-			return errParse
+		if done {
+			p.state = Done
+			return nil
 		}
-		fmt.Println("Parsed: ", parsed)
-		decoder.parsed += parsed
-		decoder.done = hasEnd
-		if hasEnd {
-			decoder.buffer.Reset()
-			fmt.Println(msgHeader)
-		}
+
+		fmt.Println("buff before:", len(buffer))
 		if parsed > 0 {
-			parsed = parsed + 1
-			newbuff := make([]byte, readIndex-parsed, readIndex-parsed)
-			copy(newbuff, readbuffer[parsed:readIndex])
-			readbuffer = newbuff
-			readIndex = readIndex - parsed
+			newbuff := make([]byte, read-parsed, read-parsed)
+			copy(newbuff, buffer[parsed:read])
+			buffer = newbuff
+			read -= parsed
 		}
-
+		fmt.Println("buff after:", len(buffer))
 	}
 	return nil
 }
 
-func (decoder *Decoder) parse(buff []byte, msgHeader *MsgHeader) (int, bool, error) {
-	separator := bytes.Index(buff, []byte{':'})
-	closingtag := false
-	if separator != -1 {
-		if separator < len(buff)-2 && buff[separator+1] == byte('-') && buff[separator+2] == byte(':') {
-			closingtag = true
-		}
-		data := buff[:separator]
-		parsed := len(data)
-		fmt.Printf("data l: %v icx: %v\n", len(data), decoder.step)
-		switch decoder.step {
-		case version:
+type HeaderParser struct {
+	header *Header
+	state  HeaderParserState
+}
 
-			if len(data) != 1 {
-				return parsed, closingtag, fmt.Errorf("error with version")
-			}
-			vers := int(data[0])
-			msgHeader.Version = vers
-			decoder.buffer.Write(data)
-		case msgtype:
+func NewHeaderParser() *HeaderParser {
+	return &HeaderParser{state: MsgType, header: &Header{}}
+}
 
-			if len(data) != 1 {
-				return parsed, closingtag, fmt.Errorf("error with msgtype")
-			}
-			msgTpye := int(data[0])
-			msgHeader.MsgType = msgTpye
-			decoder.buffer.Write(data)
-
-		case errtype:
-
-			if len(data) != 4 {
-				return parsed, closingtag, fmt.Errorf("error with errortype")
-			}
-			errT := int(binary.BigEndian.Uint16(data))
-			msgHeader.Error = errT
-			decoder.buffer.Write(data)
-
-		case methodType:
-			if len(data) != 1 {
-				return parsed, closingtag, fmt.Errorf("error with methodtype")
-			}
-			mType := int(data[0])
-			msgHeader.Method = mType
-			decoder.buffer.Write(data)
-
-		case timestamp:
-			if len(data) != 8 {
-				return parsed, closingtag, fmt.Errorf("error with timestamp")
-			}
-			tstmp := binary.BigEndian.Uint64(data)
-			msgHeader.Timestamp = time.Unix(int64(tstmp), 0).UTC()
-			decoder.buffer.Write(data)
-		case timeout:
-
-			if len(data) != 4 {
-				return parsed, closingtag, fmt.Errorf("error with timeout")
-			}
-			lifetime := int(binary.BigEndian.Uint32(data))
-			msgHeader.Timeout = time.Duration(lifetime) * time.Second
-			decoder.buffer.Write(data)
-		case domain:
-
-			if len(data) > 32 {
-				return parsed, closingtag, fmt.Errorf("error with domain")
-			}
-			dom := string(data)
-			msgHeader.Domain = dom
-			decoder.buffer.Write(data)
-
-		case endpoint:
-
-			if len(data) > 32 {
-				return parsed, closingtag, fmt.Errorf("error with endpoint")
-			}
-			ep := string(data)
-			msgHeader.Endpoint = ep
-			decoder.buffer.Write(data)
-
-		case hasAuth:
-
-			if len(data) != 1 {
-				return parsed, closingtag, fmt.Errorf("error with hasAuth")
-			}
-			authFlag := int(data[0])
-			if auth == 0 {
-				decoder.step += 1
-			}
-			msgHeader.HasAuth = authFlag == 1
-			decoder.buffer.Write(data)
-
-		case auth:
-			if len(data) > 4 {
-				return parsed, closingtag, fmt.Errorf("error with authkey")
-			}
-			auth := string(data)
-			msgHeader.Auth = auth
-			decoder.buffer.Write(data)
-
-		case haspayload:
-			if len(data) != 1 {
-				return parsed, closingtag, fmt.Errorf("error with hasPayload")
-			}
-			payloadflag := int(data[0])
-			if payloadflag == 0 {
-				decoder.step += 2
-			}
-			msgHeader.HasPayload = payloadflag == 1
-			decoder.buffer.Write(data)
-
-		case payloadtype:
-			if len(data) != 1 {
-				return parsed, closingtag, fmt.Errorf("error with payloadtype")
-			}
-			ptype := int(data[0])
-			msgHeader.PayloadType = ptype
-			decoder.buffer.Write(data)
-
-		case payloadlength:
-			if len(data) != 8 {
-				return parsed, closingtag, fmt.Errorf("error with payload")
-			}
-			plsize := binary.BigEndian.Uint64(data)
-			msgHeader.PayloadSize = int(plsize)
-			decoder.buffer.Write(data)
-
-		case checksum:
-			if len(data) != 4 {
-				return parsed, closingtag, fmt.Errorf("error with checksum")
-			}
-			checksum := binary.BigEndian.Uint32(data)
-			valid := ValidateCRC32Checksum(decoder.buffer.Bytes(), checksum)
-			if !valid {
-				return parsed, closingtag, fmt.Errorf(" invalid msg frame")
-			}
-			msgHeader.Checksum = int(checksum)
-
-		default:
-			fmt.Println("undefined")
-		}
-		decoder.step += 1
-
-		return parsed, closingtag, nil
+func (hp *HeaderParser) parseHeader(data []byte) (n int, done bool, err error) {
+	dataToParse := bytes.Index(data, []byte(Sep))
+	if dataToParse == -1 {
+		return 0, false, nil
 	}
 
-	return 0, closingtag, nil
+	end := bytes.Index(data, []byte("-:"))
+	if end == 0 {
+		hp.state = HeaderDone
+		return 2, true, nil
+	}
+
+	if dataToParse == 0 {
+		hp.state++
+		return 1, false, nil
+	}
+
+	data = data[:dataToParse]
+
+	err = hp.WriteHeader(data)
+	if err != nil {
+		hp.state = HeaderDone
+		return 0, false, err
+	}
+
+	hp.state++
+
+	return dataToParse + 1, false, nil
+}
+
+func (hp *HeaderParser) WriteHeader(data []byte) error {
+
+	switch hp.state {
+	case MsgType:
+		if len(data) != int(Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		}
+		hp.header.MsgType = data
+	case SenderId:
+		if len(data) != int(Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		}
+		hp.header.SenderId = data
+	case Key:
+		if len(data) != int(Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		}
+		hp.header.Key = data
+	case TimeStamp:
+		if len(data) != int(Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		}
+		hp.header.TimeStamp = data
+	case Version:
+		if len(data) != int(Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		}
+		hp.header.Version = data
+	default:
+		hp.state = HeaderDone
+		return fmt.Errorf("unkwon parser state %v", hp.state)
+	}
+	return nil
+}
+
+type BodyParser struct {
+	body  *Body
+	state BodyParserState
+}
+
+func NewBodyParser() *BodyParser {
+	return &BodyParser{state: PackedId}
+}
+
+func (bp *BodyParser) parseBody(data []byte) (n int, done bool, err error) {
+	dataToParse := bytes.Index(data, []byte(Sep))
+	if dataToParse == -1 {
+		fmt.Println("Break no : found")
+		return 0, false, nil
+	}
+
+	end := bytes.Index(data, []byte("-:"))
+	if end == 0 {
+		bp.state = PacketDone
+		return 2, true, nil
+	}
+
+	if dataToParse == 0 {
+		fmt.Println("Break found : at 0")
+		bp.state++
+		return 1, false, nil
+	}
+
+	data = data[:dataToParse]
+	err = bp.WriteBody(data)
+
+	if err != nil {
+		bp.state = PacketDone
+		return 0, false, err
+	}
+
+	bp.state++
+
+	return dataToParse + 1, false, nil
+}
+
+func (bp *BodyParser) WriteBody(data []byte) error {
+	switch bp.state {
+	case PackedId:
+		bp.body.PackedId = data
+	case PacketPos:
+		bp.body.PacketPos = data
+	case PrevPacked:
+		bp.body.PrevPacked = data
+	case NextPacket:
+		bp.body.NextPacket = data
+	case PacketLength:
+		bp.body.PacketLength = data
+	case Packet:
+		bp.body.Packet = data
+	default:
+		return fmt.Errorf("unknown parser state %v", bp.state)
+	}
+	return nil
 }
