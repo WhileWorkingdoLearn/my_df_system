@@ -30,6 +30,7 @@ type ByteLength int
 const (
 	Onebyte ByteLength = iota + 1
 	TwoBytes
+	FourBytes = TwoBytes * 2
 )
 
 type Message struct {
