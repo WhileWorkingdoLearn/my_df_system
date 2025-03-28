@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/WhileCodingDoLearn/my_df_system/msg"
+	msg "github.com/WhileCodingDoLearn/my_df_system/msg/protocol"
 )
 
 type Request struct {

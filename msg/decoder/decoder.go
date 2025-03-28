@@ -1,11 +1,17 @@
 package msg
 
-type ParserState int
+import (
+	"io"
+
+	msg "github.com/WhileCodingDoLearn/my_df_system/msg/protocol"
+)
+
+type DecoderState int
 
 const (
-	ReadHeader ParserState = iota
+	ReadHeader DecoderState = iota
 	ReadBody
-	Done
+	ReadDone
 	ErrorHeader
 	ErrorBody
 )
@@ -19,13 +25,15 @@ func (pf ParseFunc) Handle(data []byte) (n int, done bool, err error) {
 	return parsed, done, err
 }
 
-type HeaderParserState int
+type Decoder struct {
+	reader       io.Reader
+	persers      ParserHandler
+	headerparser HeaderParser
+	state        DecoderState
+	err          error
+}
 
-const (
-	Sep       = ":"
-	HeaderEnd = "-:"
-	MSgEnd    = "|:"
-)
+type HeaderParserState int
 
 const (
 	MsgType HeaderParserState = iota
@@ -36,12 +44,9 @@ const (
 	HeaderDone
 )
 
-type Header struct {
-	MsgType   []byte
-	SenderId  []byte
-	Key       []byte
-	TimeStamp []byte
-	Version   []byte
+type HeaderParser struct {
+	header *msg.Header
+	state  HeaderParserState
 }
 
 type BodyParserState int
@@ -56,23 +61,7 @@ const (
 	PacketDone
 )
 
-type Body struct {
-	PackedId     []byte
-	PacketPos    []byte
-	PrevPacked   []byte
-	NextPacket   []byte
-	PacketLength []byte
-	Packet       []byte
-}
-
-type ByteLength int
-
-const (
-	Onebyte ByteLength = iota + 1
-	TwoBytes
-)
-
-type Message struct {
-	header *Header
-	Body   *Body
+type BodyParser struct {
+	body  *msg.Body
+	state BodyParserState
 }

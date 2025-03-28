@@ -4,47 +4,43 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+
+	"github.com/WhileCodingDoLearn/my_df_system/msg/protocol"
 )
 
-type Decoder struct {
-	persers      ParserHandler
-	headerparser HeaderParser
-	state        ParserState
-	err          error
+func NewDecoder(reader io.Reader) *Decoder {
+	return &Decoder{reader: reader}
 }
 
-func NewDecoder() *Decoder {
-	return &Decoder{}
-}
-
-func (p *Decoder) Decode(r io.Reader) error {
+func (decoder *Decoder) Decode(msg *msg.Message) error {
 	//readHeader
-	err := p.parse(r, ReadHeader, p.headerparser.parseHeader)
+	err := decoder.parse(decoder.reader, ReadHeader, decoder.headerparser.parseHeader)
 	if err != nil {
-		p.state = ErrorHeader
-		p.err = err
+		decoder.state = ErrorHeader
+		decoder.err = err
 		return err
 	}
 
-	bodyparser, found := p.persers[p.headerparser.header.MsgType[0]]
+	bodyparser, found := decoder.persers[decoder.headerparser.header.MsgType[0]]
 	if !found {
-		return fmt.Errorf("no parser vor version found: %v", string(p.headerparser.header.MsgType[0]))
+		return fmt.Errorf("no parser vor version found: %v", string(decoder.headerparser.header.MsgType[0]))
 	}
-	err = p.parse(r, ReadBody, bodyparser)
+	err = decoder.parse(decoder.reader, ReadBody, bodyparser)
 	if err != nil {
-		p.state = ErrorBody
-		p.err = err
+		decoder.state = ErrorBody
+		decoder.err = err
 		return err
 	}
+
 	return nil
 
 }
 
-func (p *Decoder) parse(r io.Reader, state ParserState, parser ParseFunc) error {
+func (decoder *Decoder) parse(r io.Reader, state DecoderState, parser ParseFunc) error {
 	buffer := make([]byte, 8, 8) // Anfangsgröße des Buffers
 	read := 0
 
-	for p.state == state {
+	for decoder.state == state {
 		if read >= len(buffer) {
 			nBuff := make([]byte, len(buffer)*2, len(buffer)*2)
 			copy(nBuff, buffer)
@@ -54,7 +50,7 @@ func (p *Decoder) parse(r io.Reader, state ParserState, parser ParseFunc) error 
 		n, err := r.Read(buffer[read:])
 		if err != nil {
 			if err == io.EOF {
-				p.state = Done
+				decoder.state = ReadDone
 			} else {
 				fmt.Println(err)
 				return err
@@ -65,12 +61,12 @@ func (p *Decoder) parse(r io.Reader, state ParserState, parser ParseFunc) error 
 		parsed, done, err := parser.Handle(buffer[:read])
 
 		if err != nil {
-			p.state = Done
+			decoder.state = ReadDone
 			return fmt.Errorf("parsing error: %w", err)
 		}
 
 		if done {
-			p.state = Done
+			decoder.state = ReadDone
 			return nil
 		}
 
@@ -83,20 +79,16 @@ func (p *Decoder) parse(r io.Reader, state ParserState, parser ParseFunc) error 
 		}
 		fmt.Println("buff after:", len(buffer))
 	}
+
 	return nil
 }
 
-type HeaderParser struct {
-	header *Header
-	state  HeaderParserState
-}
-
 func NewHeaderParser() *HeaderParser {
-	return &HeaderParser{state: MsgType, header: &Header{}}
+	return &HeaderParser{state: MsgType, header: &msg.Header{}}
 }
 
 func (hp *HeaderParser) parseHeader(data []byte) (n int, done bool, err error) {
-	dataToParse := bytes.Index(data, []byte(Sep))
+	dataToParse := bytes.Index(data, []byte(msg.Sep))
 	if dataToParse == -1 {
 		return 0, false, nil
 	}
@@ -129,28 +121,28 @@ func (hp *HeaderParser) WriteHeader(data []byte) error {
 
 	switch hp.state {
 	case MsgType:
-		if len(data) != int(Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		if len(data) != int(msg.Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
 		}
 		hp.header.MsgType = data
 	case SenderId:
-		if len(data) != int(Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		if len(data) != int(msg.Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
 		}
 		hp.header.SenderId = data
 	case Key:
-		if len(data) != int(Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		if len(data) != int(msg.Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
 		}
 		hp.header.Key = data
 	case TimeStamp:
-		if len(data) != int(Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		if len(data) != int(msg.Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
 		}
 		hp.header.TimeStamp = data
 	case Version:
-		if len(data) != int(Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, Onebyte)
+		if len(data) != int(msg.Onebyte) {
+			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
 		}
 		hp.header.Version = data
 	default:
@@ -160,17 +152,12 @@ func (hp *HeaderParser) WriteHeader(data []byte) error {
 	return nil
 }
 
-type BodyParser struct {
-	body  *Body
-	state BodyParserState
-}
-
 func NewBodyParser() *BodyParser {
 	return &BodyParser{state: PackedId}
 }
 
 func (bp *BodyParser) parseBody(data []byte) (n int, done bool, err error) {
-	dataToParse := bytes.Index(data, []byte(Sep))
+	dataToParse := bytes.Index(data, []byte(msg.Sep))
 	if dataToParse == -1 {
 		fmt.Println("Break no : found")
 		return 0, false, nil

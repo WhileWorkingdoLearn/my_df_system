@@ -6,7 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WhileCodingDoLearn/my_df_system/msg"
+	decoder "github.com/WhileCodingDoLearn/my_df_system/msg/decoder"
+	msg "github.com/WhileCodingDoLearn/my_df_system/msg/protocol"
 	nmsgp "github.com/WhileCodingDoLearn/my_df_system/p2p/tcp/mux"
 )
 
@@ -127,9 +128,8 @@ func (node *TCPNode) handleConnection(conn net.Conn) {
 
 	defer node.removeConnection(id)
 
-	p := msg.NewDecoder()
-	p.Decode(conn)
-	err := p.Decode(conn)
+	p := decoder.NewDecoder(conn)
+	err := p.Decode(nil)
 	if err != nil {
 		conn.Close()
 	}
