@@ -129,7 +129,7 @@ func (node *TCPNode) handleConnection(conn net.Conn) {
 	defer node.removeConnection(id)
 
 	p := decoder.NewDecoder(conn)
-	err := p.Decode(nil)
+	err := p.DecodeMsg(nil)
 	if err != nil {
 		conn.Close()
 	}

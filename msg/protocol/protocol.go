@@ -34,6 +34,6 @@ const (
 )
 
 type Message struct {
-	header Header
+	Header Header
 	Body   Body
 }

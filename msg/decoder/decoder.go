@@ -6,37 +6,16 @@ import (
 	msg "github.com/WhileCodingDoLearn/my_df_system/msg/protocol"
 )
 
-type DecoderState int
-
-const (
-	ReadHeader DecoderState = iota
-	ReadBody
-	ReadDone
-	ErrorHeader
-	ErrorBody
-)
-
-type ParserHandler map[byte]ParseFunc
-
-type ParseFunc func(data []byte) (n int, done bool, err error)
-
-func (pf ParseFunc) Handle(data []byte) (n int, done bool, err error) {
-	parsed, done, err := pf(data)
-	return parsed, done, err
-}
-
 type Decoder struct {
 	reader       io.Reader
-	persers      ParserHandler
-	headerparser HeaderParser
-	state        DecoderState
-	err          error
+	headerParser func(reader io.Reader, setter msg.Handler) error
+	bodyParser   func(reader io.Reader, setter msg.Handler) error
 }
 
-type HeaderParserState int
+type HeaderParserPosition int
 
 const (
-	MsgType HeaderParserState = iota
+	MsgType HeaderParserPosition = iota
 	SenderId
 	Key
 	TimeStamp
@@ -44,15 +23,10 @@ const (
 	HeaderDone
 )
 
-type HeaderParser struct {
-	header *msg.Header
-	state  HeaderParserState
-}
-
-type BodyParserState int
+type BodyParserPosition int
 
 const (
-	PackedId BodyParserState = iota
+	PackedId BodyParserPosition = iota
 	PacketPos
 	PrevPacked
 	NextPacket
@@ -60,8 +34,3 @@ const (
 	Packet
 	PacketDone
 )
-
-type BodyParser struct {
-	body  *msg.Body
-	state BodyParserState
-}

@@ -1,8 +1,16 @@
 package msg
 
 import (
-	"bytes"
+	"io"
+
+	msg "github.com/WhileCodingDoLearn/my_df_system/msg/protocol"
 )
+
+type Encoder struct {
+	reader       io.Reader
+	headerParser func(reader io.Reader, setter msg.Handler) error
+	bodyParser   func(reader io.Reader, setter msg.Handler) error
+}
 
 type EncoderStringState int
 
@@ -12,13 +20,6 @@ const (
 	EncodeDone
 	Err
 )
-
-type Encoder struct {
-	buffer  *bytes.Buffer
-	state   EncoderStringState
-	compile CompileState
-	err     error
-}
 
 type EncodeType func(data string) error
 
@@ -37,7 +38,7 @@ const (
 	BodyPos
 	PrevMsg
 	NextMsg
-	BdoyLength
-	Body
+	PayloadLength
+	Payload
 	BodyDone
 )
