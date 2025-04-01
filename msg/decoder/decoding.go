@@ -16,34 +16,34 @@ func NewDecoder(r io.Reader) Decoder {
 
 }
 
-func WriteHeader(data []byte, idx HeaderParserPosition, header *msg.Header) error {
+func WriteHeader(data []byte, idx HeaderDataPosition, header *msg.Header) error {
 	if header == nil {
 		return fmt.Errorf("no header provided")
 	}
 	switch idx {
 	case MsgType:
-		if len(data) != 1 {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
+		if len(data) != int(msg.Onebyte) {
+			return fmt.Errorf("msgtype - malformed header data have:  %v bytes, want : %v bytes", len(data), msg.Onebyte)
 		}
 		header.MsgType = data
 	case SenderId:
-		if len(data) != int(msg.Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
+		if len(data) != int(msg.SixteenBytes) {
+			return fmt.Errorf("senderid - malformed header data have:  %v bytes, want : %v bytes", len(data), msg.SixteenBytes)
 		}
 		header.SenderId = data
-	case Key:
-		if len(data) != int(msg.Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
+	case SessionId:
+		if len(data) != int(msg.SixteenBytes) {
+			return fmt.Errorf("sessionKey -malformed header data have:  %v bytes, want : %v bytes", len(data), msg.SixteenBytes)
 		}
-		header.Key = data
+		header.SessionId = data
 	case TimeStamp:
-		if len(data) != int(msg.Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
+		if len(data) != 10 {
+			return fmt.Errorf("timestamp - malformed header data have:  %v bytes, want : %v bytes", len(data), 10)
 		}
 		header.TimeStamp = data
 	case Version:
 		if len(data) != int(msg.Onebyte) {
-			return fmt.Errorf("malformed header data %v, want : %v byte", data, msg.Onebyte)
+			return fmt.Errorf("version - malformed header data have:  %v bytes, want : %v bytes", len(data), msg.Onebyte)
 		}
 		header.Version = data
 	default:
@@ -54,7 +54,7 @@ func WriteHeader(data []byte, idx HeaderParserPosition, header *msg.Header) erro
 }
 
 func (dec *Decoder) DecodeMsg(msg *msg.Message) error {
-	err := dec.DecodeHeader(&msg.Header)
+	err := dec.decodeHeader(&msg.Header)
 	if err != nil {
 		return err
 	}
@@ -66,42 +66,16 @@ func (dec *Decoder) DecodeMsg(msg *msg.Message) error {
 	return err
 }
 
-func (dec *Decoder) DecodeMsgToString() (string, error) {
+func (dec *Decoder) decodeHeader(msgheader *msg.Header) error {
 	err := dec.headerParser(dec.reader, func(data []byte, idx int) error {
-		return nil
-	})
-	if err != nil {
-		return "", err
-	}
-
-	err = dec.bodyParser(dec.reader, func(data []byte, idx int) error {
-		return nil
-	})
-
-	return "", err
-}
-
-func (dec *Decoder) DecodeHeader(msgheader *msg.Header) error {
-	err := dec.headerParser(dec.reader, func(data []byte, idx int) error {
-		return WriteHeader(data, HeaderParserPosition(idx), msgheader)
+		return WriteHeader(data, HeaderDataPosition(idx), msgheader)
 	})
 	return err
 }
 
-func (dec *Decoder) DecodeHeaderToString() (string, error) {
-	return "", nil
-}
-
-func (dec *Decoder) DecodeBody(msgheader *msg.Header) error {
+func (dec *Decoder) decodeBody(msgbody *msg.Body) error {
 	err := dec.bodyParser(dec.reader, func(data []byte, idx int) error {
 		return nil
 	})
 	return err
-}
-
-func (dec *Decoder) DecodeBodyToString() (string, error) {
-	err := dec.bodyParser(dec.reader, func(data []byte, idx int) error {
-		return nil
-	})
-	return "", err
 }

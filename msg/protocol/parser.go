@@ -12,20 +12,18 @@ const (
 )
 
 type Config struct {
-	Buffersize  int
-	FixedBuffer bool
-	Separator   string
-	End         string
+	Buffersize int
+	Separator  string
+	End        string
 }
 
 type Parser struct {
-	buffersize  int
-	fixedBuffer bool
-	state       ParserState
-	stm         *state
-	separator   string
-	end         string
-	err         error
+	buffersize int
+	state      ParserState
+	stm        *state
+	separator  string
+	end        string
+	err        error
 }
 
 type state struct {

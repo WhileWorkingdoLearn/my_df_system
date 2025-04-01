@@ -8,38 +8,37 @@ import (
 
 func DefaultConfig() Config {
 	return Config{
-		Buffersize:  128,
-		FixedBuffer: false,
-		Separator:   string(Sep),
-		End:         string(MSgEnd),
+		Buffersize: 128,
+		Separator:  string(Sep),
+		End:        string(MSgEnd),
 	}
 }
 
 func NewHeaderParser() *Parser {
-	return &Parser{buffersize: 128,
-		fixedBuffer: false,
-		separator:   string(Sep),
-		end:         string(HeaderEnd),
-		stm:         &state{state: initialstate},
-		state:       initial}
+	return &Parser{
+		buffersize: 8,
+		separator:  string(Sep),
+		end:        string(HeaderEnd),
+		stm:        &state{state: initialstate},
+		state:      initial}
 }
 
 func NewBodyParser() *Parser {
-	return &Parser{buffersize: 128,
-		fixedBuffer: false,
-		separator:   string(Sep),
-		end:         string(MSgEnd),
-		stm:         &state{state: initialstate},
+	return &Parser{
+		buffersize: 128,
+		separator:  string(Sep),
+		end:        string(MSgEnd),
+		stm:        &state{state: initialstate},
+		state:      initial,
 	}
 }
 
 func NewParser(cfg Config) *Parser {
 	return &Parser{
-		buffersize:  cfg.Buffersize,
-		fixedBuffer: cfg.FixedBuffer,
-		separator:   cfg.Separator,
-		end:         cfg.End,
-		stm:         &state{state: initialstate},
+		buffersize: cfg.Buffersize,
+		separator:  cfg.Separator,
+		end:        cfg.End,
+		stm:        &state{state: initialstate},
 	}
 }
 
@@ -47,8 +46,9 @@ func (parser *Parser) Parse(reader io.Reader, setter Handler) error {
 	buffer := make([]byte, parser.buffersize, parser.buffersize)
 	read := 0
 	parser.state = parsing
+	parser.stm.Reset()
 	for parser.state == parsing {
-		if !parser.fixedBuffer && read >= len(buffer) {
+		if read >= len(buffer) {
 			nBuff := make([]byte, len(buffer)*2, len(buffer)*2)
 			copy(nBuff, buffer)
 			buffer = nBuff
@@ -57,7 +57,7 @@ func (parser *Parser) Parse(reader io.Reader, setter Handler) error {
 		n, err := reader.Read(buffer[read:])
 		if err != nil {
 			if err == io.EOF {
-				
+				parser.state = done
 			} else {
 				parser.state = parseErr
 				parser.err = err
@@ -74,11 +74,12 @@ func (parser *Parser) Parse(reader io.Reader, setter Handler) error {
 		}
 
 		if isDone {
+
 			parser.state = done
 			return nil
 		}
 
-		if parsed > 0 && !parser.fixedBuffer {
+		if parsed > 0 {
 			newbuff := make([]byte, read-parsed, read-parsed)
 			copy(newbuff, buffer[parsed:read])
 			buffer = newbuff
@@ -139,7 +140,7 @@ func (sm *state) Set(state stateValues) error {
 }
 
 func (sm *state) Reset() {
-	sm.state = 0
+	sm.state = initialstate
 }
 
 func (sm *state) Done() {

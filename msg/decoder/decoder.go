@@ -12,21 +12,21 @@ type Decoder struct {
 	bodyParser   func(reader io.Reader, setter msg.Handler) error
 }
 
-type HeaderParserPosition int
+type HeaderDataPosition int
 
 const (
-	MsgType HeaderParserPosition = iota
+	MsgType HeaderDataPosition = iota
 	SenderId
-	Key
+	SessionId
 	TimeStamp
 	Version
 	HeaderDone
 )
 
-type BodyParserPosition int
+type BodyDataPosition int
 
 const (
-	PackedId BodyParserPosition = iota
+	PackedId BodyDataPosition = iota
 	PacketPos
 	PrevPacked
 	NextPacket

@@ -11,9 +11,10 @@ const (
 type Header struct {
 	MsgType   []byte
 	SenderId  []byte
-	Key       []byte
+	SessionId []byte
 	TimeStamp []byte
 	Version   []byte
+	Checksum  []byte
 }
 
 type Body struct {
@@ -30,7 +31,10 @@ type ByteLength int
 const (
 	Onebyte ByteLength = iota + 1
 	TwoBytes
-	FourBytes = TwoBytes * 2
+	FourBytes                 = TwoBytes * 27
+	SixteenBytes   ByteLength = 16
+	ThirtytwoBytes ByteLength = 32
+	SixtyfourBytes ByteLength = 64
 )
 
 type Message struct {
